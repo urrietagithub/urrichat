@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrriChat Pro</title>
+    <title>UrriChat</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -53,10 +53,10 @@
     <div id="login">
         <i class="fas fa-comments" style="font-size: 4rem; color: #007bff;"></i>
         <h1 style="color: #007bff; font-size: 2.5rem; margin: 0;">URRICHAT</h1>
-        <p style="color: #666;">Conéctate con el mundo</p>
-        <input type="text" id="username" placeholder="Escribe tu alias...">
+        <p style="color: #666;">Conéctate</p>
+        <input type="text" id="username" placeholder="Nombre de usuario...">
         <button id="main-btn" onclick="registrarUsuario()">
-            <i class="fas fa-sign-in-alt"></i> ENTRAR AHORA
+            <i class="fas fa-sign-in-alt"></i> Conectar
         </button>
     </div>
 
@@ -64,16 +64,16 @@
         <div class="header">
             <span id="mi-perfil" style="font-weight: bold; color: #2ecc71;"></span>
             <button class="btn-header" onclick="editarNombre()">
-                <i class="fas fa-user-edit"></i> PERFIL
+                <i class="fas fa-user-edit"></i> Perfil
             </button>
         </div>
         <div id="lista-usuarios" style="padding: 15px; overflow-y: auto;">
             <div class="contact-card" onclick="abrirChat('muro', 'SALA PÚBLICA')" style="border-left: 5px solid #007bff; background: #1e1e26;">
-                <span><i class="fas fa-globe-americas" style="margin-right: 10px;"></i> SALA PÚBLICA</span>
+                <span><i class="fas fa-globe-americas" style="margin-right: 10px;"></i> Todos</span>
                 <span class="online-dot"></span>
             </div>
             <p style="color: #666; font-size: 12px; margin: 25px 0 10px 5px; letter-spacing: 1px;">
-                <i class="fas fa-users"></i> USUARIOS DISPONIBLES
+                <i class="fas fa-users"></i> Usuarios Disponibles
             </p>
             <div id="usuarios-conectados"></div>
         </div>
