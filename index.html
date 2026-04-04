@@ -7,39 +7,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        /* --- AJUSTE PARA CENTRAR TODO --- */
-        body { 
-            font-family: sans-serif; 
-            background: #0f0f12; 
-            color: white; 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            justify-content: center; /* Centra verticalmente */
-            align-items: center;     /* Centra horizontalmente */
-        }
-
-        #login { 
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 80%;
-            max-width: 400px;
-            text-align: center; 
-        }
-
-        /* Contenedores principales ocupan el ancho del móvil pero se ven centrados */
-        #contacts-container, #chat-container { 
-            display: none; 
-            flex-direction: column; 
-            width: 100%; 
-            max-width: 500px; /* Tamaño máximo para que no se estire de más en PC */
-            height: 100%; 
-            background: #0f0f12;
-        }
-
-        /* --- RESTO DEL ESTILO SE MANTIENE --- */
+        /* --- ESTILOS MANTENIDOS --- */
+        body { font-family: sans-serif; background: #0f0f12; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center; }
+        #login { display: flex; flex-direction: column; gap: 20px; width: 80%; max-width: 400px; text-align: center; }
+        #contacts-container, #chat-container { display: none; flex-direction: column; width: 100%; max-width: 500px; height: 100%; background: #0f0f12; }
         .online-dot { height: 10px; width: 10px; background-color: #2ecc71; border-radius: 50%; display: inline-block; margin-right: 10px; box-shadow: 0 0 5px #2ecc71; }
         .contact-card { background: #1a1a20; padding: 15px; margin: 10px 0; border-radius: 10px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
         .contact-card:hover { border-color: #007bff; }
@@ -55,7 +26,7 @@
         small { display: block; font-size: 11px; color: #88ccff; margin-bottom: 4px; }
     </style>
 </head>
-<body>
+<body onload="verificarSesion()">
 
     <div id="login">
         <h1 style="color: #007bff; font-size: 3rem; margin-bottom: 10px;">URRICHAT</h1>
@@ -93,7 +64,6 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN DE FIREBASE (Mantenida igual)
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -109,16 +79,34 @@
         let usuarioActual = "";
         let salaActual = "";
 
+        // NUEVO: Verificar si ya existe un usuario guardado
+        function verificarSesion() {
+            const guardado = localStorage.getItem("urrichat_user");
+            if (guardado) {
+                usuarioActual = guardado;
+                entrarApp();
+            }
+            // Pedir permiso para notificaciones
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+        }
+
         function registrarUsuario() {
             let inputName = document.getElementById('username').value.trim();
             if (inputName) {
                 usuarioActual = inputName;
-                db.ref("usuarios/" + usuarioActual).set("online");
-                document.getElementById('login').style.display = 'none';
-                document.getElementById('contacts-container').style.display = 'flex';
-                document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
-                escucharUsuarios();
+                localStorage.setItem("urrichat_user", usuarioActual); // Guardar en el teléfono
+                entrarApp();
             }
+        }
+
+        function entrarApp() {
+            db.ref("usuarios/" + usuarioActual).set("online");
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('contacts-container').style.display = 'flex';
+            document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
+            escucharUsuarios();
         }
 
         function editarNombre() {
@@ -126,6 +114,7 @@
             if (nuevoNombre && nuevoNombre !== usuarioActual) {
                 db.ref("usuarios/" + usuarioActual).remove();
                 usuarioActual = nuevoNombre;
+                localStorage.setItem("urrichat_user", usuarioActual);
                 db.ref("usuarios/" + usuarioActual).set("online");
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
             }
@@ -160,6 +149,7 @@
 
         function volverAContactos() {
             db.ref(salaActual).off();
+            salaActual = "";
             document.getElementById('chat-container').style.display = 'none';
             document.getElementById('contacts-container').style.display = 'flex';
         }
@@ -168,7 +158,7 @@
             const input = document.getElementById('msg-input');
             const texto = input.value.trim();
             if (texto && salaActual) {
-                db.ref(salaActual).push({ u: usuarioActual, t: texto });
+                db.ref(salaActual).push({ u: usuarioActual, t: texto, time: Date.now() });
                 input.value = "";
             }
         }
@@ -181,15 +171,28 @@
             db.ref(salaActual).on("value", (snapshot) => {
                 if (!snapshot.exists()) document.getElementById("messages").innerHTML = "";
             });
+
             db.ref(salaActual).limitToLast(50).on("child_added", (snapshot) => {
                 const data = snapshot.val();
                 const msgDiv = document.createElement("div");
                 const esMio = data.u === usuarioActual;
+                
                 msgDiv.className = `msg ${esMio ? 'me' : 'other'}`;
                 msgDiv.innerHTML = esMio ? data.t : `<small>${data.u}</small>${data.t}`;
+                
                 const box = document.getElementById("messages");
                 box.appendChild(msgDiv);
                 box.scrollTop = box.scrollHeight;
+
+                // NUEVO: Enviar notificación si el mensaje no es mío y no estoy viendo ese chat
+                if (!esMio && document.hidden) {
+                    new Notification("Nuevo mensaje en UrriChat", {
+                        body: `${data.u}: ${data.t}`,
+                        icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png"
+                    });
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+                    audio.play();
+                }
             });
         }
     </script>
