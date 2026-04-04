@@ -22,22 +22,21 @@
         
         #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
         
-        /* Burbujas de Chat */
         .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; animation: fadeIn 0.3s ease; }
         .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; }
         .msg.other { align-self: flex-start; background: #2c2c34; border-bottom-left-radius: 2px; }
         
-        /* Imágenes adjuntas */
         .chat-img { max-width: 100%; border-radius: 10px; margin-top: 5px; cursor: pointer; display: block; }
 
         .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a20; border-bottom: 1px solid #333; }
         .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 5px; }
         
         .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: center; }
-        input { flex: 1; padding: 12px; border-radius: 8px; border: none; background: #2c2c34; color: white; outline: none; font-size: 14px; }
         
-        /* Botones Pro */
-        button#main-btn { padding: 10px 18px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        /* CAMBIO AQUÍ: Centrado de texto en inputs */
+        input { flex: 1; padding: 12px; border-radius: 5px; border: none; background: #2c2c34; color: white; outline: none; font-size: 14px; text-align: center; }
+        
+        button#main-btn { padding: 10px 18px; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
         button#main-btn:active { transform: scale(0.95); }
         .btn-icon { background: #333; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
 
@@ -51,13 +50,10 @@
 <body onload="verificarSesion()">
 
     <div id="login">
-        <i class="fas fa-comments" style="font-size: 4rem; color: #007bff;"></i>
-        <h1 style="color: #007bff; font-size: 2.5rem; margin: 0;">URRICHAT</h1>
-        <p style="color: #666;">Conéctate con el mundo</p>
-        <input type="text" id="username" placeholder="Escribe tu alias...">
-        <button id="main-btn" onclick="registrarUsuario()">
-            <i class="fas fa-sign-in-alt"></i> ENTRAR AHORA
-        </button>
+        <h1 style="color: #007bff; font-size: 4rem; margin: 0; font-weight: 800;">URRICHAT</h1>
+        <p style="color: #666; font-size: 1.1rem; margin-top: 10px;">Ingresa para comenzar</p>
+        <input type="text" id="username" placeholder="Tu nombre de usuario...">
+        <button id="main-btn" onclick="registrarUsuario()">CONECTAR</button>
     </div>
 
     <div id="contacts-container">
@@ -215,7 +211,6 @@
             }
         }
 
-        // --- FUNCIONALIDAD PRO: ADJUNTAR IMÁGENES ---
         function enviarImagen(input) {
             const file = input.files[0];
             if (!file) return;
@@ -231,7 +226,7 @@
                 });
             };
             reader.readAsDataURL(file);
-            input.value = ""; // Reset del input
+            input.value = "";
         }
 
         function notificarEscribiendo() {
@@ -270,7 +265,6 @@
 
                 msgDiv.className = `msg ${esMio ? 'me' : 'other'}`;
                 
-                // Renderizar Texto o Imagen
                 let contenido = data.type === "image" 
                     ? `<img src="${data.t}" class="chat-img" onclick="window.open(this.src)">` 
                     : data.t;
