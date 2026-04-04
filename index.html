@@ -68,7 +68,7 @@
             </button>
         </div>
         <div id="lista-usuarios" style="padding: 15px; overflow-y: auto;">
-            <div class="contact-card" onclick="abrirChat('muro', 'SALA PÚBLICA')" style="border-left: 5px solid #007bff; background: #1e1e26;">
+            <div class="contact-card" onclick="abrirChat('muro', 'Todos')" style="border-left: 5px solid #007bff; background: #1e1e26;">
                 <span><i class="fas fa-globe-americas" style="margin-right: 10px;"></i> Todos</span>
                 <span class="online-dot"></span>
             </div>
@@ -98,7 +98,7 @@
                 <i class="fas fa-image"></i>
             </button>
             
-            <input type="text" id="msg-input" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') enviar()" oninput="notificarEscribiendo()">
+            <input type="text" id="msg-input" placeholder="Escribe tu mensaje..." onkeypress="if(event.key==='Enter') enviar()" oninput="notificarEscribiendo()">
             
             <button id="main-btn" onclick="enviar()">
                 <i class="fas fa-paper-plane"></i>
