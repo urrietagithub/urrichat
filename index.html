@@ -28,6 +28,7 @@
             justify-content: center; 
             align-items: center; 
             overflow: hidden;
+            overscroll-behavior-y: contain; /* Permite el refresh nativo */
         }
 
         /* --- LOGIN --- */
@@ -99,11 +100,10 @@
         .contact-card { background: #1a1a20; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; position: relative; }
         .contact-card:hover { border-color: #007bff; background: #25252d; }
         
-        /* Badge mejorado */
         .unread-badge { background: #007bff; color: white; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: bold; margin: 0 10px; min-width: 12px; text-align: center; }
 
         /* --- CHAT --- */
-        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
 
         .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; display: flex; flex-direction: column; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -115,11 +115,23 @@
         .reactions-container { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
         .reaction-badge { background: #1a1a20; border: 1px solid #444; border-radius: 10px; padding: 2px 6px; font-size: 12px; display: flex; align-items: center; gap: 3px; }
 
-        /* Selector de Reacciones Visual */
-        #reaction-selector { display: none; position: fixed; background: #1a1a20; border: 1px solid #333; padding: 8px; border-radius: 20px; z-index: 1000; box-shadow: 0 5px 20px rgba(0,0,0,0.8); gap: 10px; }
+        /* Menú de Reacciones Compacto (5 arriba, 5 abajo) */
+        #reaction-selector { 
+            display: none; 
+            position: fixed; 
+            background: #1a1a20; 
+            border: 1px solid #333; 
+            padding: 10px; 
+            border-radius: 15px; 
+            z-index: 1000; 
+            box-shadow: 0 5px 25px rgba(0,0,0,0.9); 
+            display: none; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 12px;
+        }
 
         .emoji-picker { display: none; position: absolute; bottom: 70px; left: 15px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 100; box-shadow: 0 5px 20px rgba(0,0,0,0.8); }
-        .emoji-item { cursor: pointer; font-size: 1.2rem; transition: 0.2s; text-align: center; }
+        .emoji-item { cursor: pointer; font-size: 1.3rem; transition: 0.2s; text-align: center; }
         .emoji-item:hover { transform: scale(1.3); }
 
         .attachment { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; transition: 0.3s; }
@@ -374,7 +386,7 @@
         function escucharMensajes() {
             db.ref(salaActual).on("value", (snapshot) => {
                 const box = document.getElementById("messages");
-                let shouldScroll = box.scrollHeight - box.scrollTop <= box.clientHeight + 100;
+                let shouldScroll = box.scrollHeight - box.scrollTop <= box.clientHeight + 150;
                 let htmlTemp = "";
                 snapshot.forEach((child) => {
                     const data = child.val();
@@ -430,6 +442,7 @@
                 input.value = "";
                 input.style.height = 'auto'; 
                 input.focus();
+                setTimeout(scrollToBottom, 50);
             }
         }
 
@@ -441,7 +454,7 @@
 
         function scrollToBottom() {
             const box = document.getElementById("messages");
-            box.scrollTop = box.scrollHeight;
+            box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
         }
 
         function volverAContactos() {
@@ -508,14 +521,22 @@
             i.focus();
         }
 
-        /* Lógica de Reacciones Mejorada */
         function reaccionar(event, msgId) {
             event.stopPropagation();
             msgIdParaReaccionar = msgId;
             const selector = document.getElementById('reaction-selector');
-            selector.style.display = 'flex';
-            selector.style.top = (event.clientY - 50) + 'px';
-            selector.style.left = (event.clientX - 100) + 'px';
+            selector.style.display = 'grid';
+            
+            // Posicionamiento inteligente para que no se salga de pantalla
+            let top = event.clientY - 80;
+            let left = event.clientX - 100;
+            
+            if (left < 10) left = 10;
+            if (left + 200 > window.innerWidth) left = window.innerWidth - 210;
+            if (top < 10) top = event.clientY + 20;
+
+            selector.style.top = top + 'px';
+            selector.style.left = left + 'px';
         }
 
         function aplicarReaccion(emoji) {
