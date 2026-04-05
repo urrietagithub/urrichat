@@ -15,10 +15,10 @@
         #username { text-align: center; }
         #contacts-container, #chat-container { display: none; flex-direction: column; width: 100%; max-width: 500px; height: 100%; background: #0f0f12; }
         
-        /* CAMBIO AQUÍ: Clases para estados */
-        .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; transition: 0.3s; }
-        .dot-online { background-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
-        .dot-offline { background-color: #ff4444; box-shadow: 0 0 5px #ff4444; }
+        /* Clases para estados */
+        .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; transition: background-color 0.3s, box-shadow 0.3s; }
+        .dot-online { background-color: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+        .dot-offline { background-color: #ff4444; box-shadow: 0 0 8px #ff4444; }
 
         .contact-card { background: #1a1a20; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; }
         .contact-card:hover { border-color: #007bff; background: #25252d; }
@@ -150,11 +150,18 @@
             let inputName = document.getElementById('username').value.trim();
             if (inputName) {
                 usuarioActual = inputName;
-                // CAMBIO: Al conectar ponemos online
-                db.ref("usuarios/" + usuarioActual).set("online");
-                // CAMBIO: Al desconectar, en lugar de remove(), ponemos offline
-                db.ref("usuarios/" + usuarioActual).onDisconnect().set("offline");
-                
+
+                // ESTO ES CLAVE: Sincronización de presencia real
+                const userRef = db.ref("usuarios/" + usuarioActual);
+                const connectedRef = db.ref(".info/connected");
+
+                connectedRef.on("value", (snap) => {
+                    if (snap.val() === true) {
+                        userRef.onDisconnect().set("offline");
+                        userRef.set("online");
+                    }
+                });
+
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('contacts-container').style.display = 'flex';
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
@@ -165,7 +172,6 @@
         function editarNombre() {
             let nuevoNombre = prompt("Nuevo nombre:", usuarioActual);
             if (nuevoNombre && nuevoNombre !== usuarioActual) {
-                // CAMBIO: Al cambiar nombre, el anterior queda offline (o puedes removerlo si prefieres)
                 db.ref("usuarios/" + usuarioActual).set("offline"); 
                 usuarioActual = nuevoNombre;
                 db.ref("usuarios/" + usuarioActual).set("online");
@@ -175,18 +181,18 @@
         }
 
         function escucharUsuarios() {
+            // Usamos 'value' para asegurar que cualquier cambio de estado (online/offline) dispare el render
             db.ref("usuarios").on("value", (snapshot) => {
                 const listaDiv = document.getElementById("usuarios-conectados");
                 listaDiv.innerHTML = "";
                 snapshot.forEach((child) => {
                     const nombre = child.key;
-                    const estado = child.val(); // "online" u "offline"
+                    const estado = child.val(); 
                     
                     if (nombre !== usuarioActual) {
                         const card = document.createElement("div");
                         card.className = "contact-card";
                         
-                        // CAMBIO: Lógica para decidir si el punto es verde o rojo
                         const statusClass = (estado === "online") ? "dot-online" : "dot-offline";
                         
                         card.innerHTML = `<span><i class="fas fa-user-circle user-icon" style="margin-right: 10px;"></i>${nombre}</span><span class="online-dot ${statusClass}"></span>`;
