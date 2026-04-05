@@ -175,6 +175,7 @@
         <div id="lista-usuarios" style="padding: 15px; overflow-y: auto;">
             <div class="contact-card" onclick="abrirChat('muro', 'Chat Grupal')" style="border-left: 5px solid #007bff; background: #1e1e26;">
                 <span><i class="fas fa-users" style="margin-right: 10px;"></i> Chat Grupal</span>
+                <span id="badge-muro"></span>
                 <span class="online-dot dot-online"></span>
             </div>
             <p style="color: #666; font-size: 15px; margin: 20px 0 10px 5px; font-weight: 500;">Usuarios De UrriChat</p>
@@ -223,7 +224,6 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN FIREBASE (La tuya original)
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -242,8 +242,6 @@
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
-
-        // --- FUNCIONES MEJORADAS ---
 
         function autoResize(textarea) {
             textarea.style.height = 'auto';
@@ -280,6 +278,7 @@
                 document.getElementById('contacts-container').style.display = 'flex';
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
                 escucharUsuarios();
+                verificarMensajesNuevos('muro'); // Escuchar el muro siempre
             }
         }
 
@@ -312,16 +311,20 @@
         }
 
         function verificarMensajesNuevos(salaID) {
-            db.ref(salaID).limitToLast(1).on("value", (snap) => {
+            db.ref(salaID).on("value", (snap) => {
                 const badge = document.getElementById(`badge-${salaID}`);
-                if (!badge || salaActual === salaID) return;
+                if (!badge || salaActual === salaID) {
+                    if(badge) badge.innerHTML = "";
+                    return;
+                }
+                let count = 0;
                 snap.forEach(msg => {
-                    if (msg.val().u !== usuarioActual && msg.val().r === false) {
-                        badge.innerHTML = `<span class="unread-badge">!</span>`;
-                    } else {
-                        badge.innerHTML = "";
+                    const m = msg.val();
+                    if (m.u !== usuarioActual && m.r === false) {
+                        count++;
                     }
                 });
+                badge.innerHTML = count > 0 ? `<span class="unread-badge">${count}</span>` : "";
             });
         }
 
@@ -483,14 +486,10 @@
             i.value += e; autoResize(i); toggleEmojiPicker(); i.focus();
         }
 
-        /* --- ACTUALIZACIÓN DE REACCIONES --- */
         function reaccionar(msgId) {
-            // Ampliamos el menú de opciones rápidas
-            const menu = "Opciones rápidas:\n😊, 😂, ❤️, 👍, 🔥, 😮, 😢, 👏, 😎, 🎉\n\nO escribe tu propio emoji:";
-            const emoji = prompt(menu, "❤️");
-            
+            const emojisMenu = "Selecciona o escribe un emoji:\n😊 😂 ❤️ 👍 🔥 😮 😢 👏 😎 🎉";
+            const emoji = prompt(emojisMenu, "❤️");
             if (emoji) {
-                // Mantenemos tu función transaction intacta
                 const rRef = db.ref(`${salaActual}/${msgId}/reacciones/${emoji}`);
                 rRef.transaction((currentValue) => (currentValue || 0) + 1);
             }
