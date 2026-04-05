@@ -456,14 +456,17 @@
         }
 
         function escucharMensajes() {
+            // Usamos .on("value") asegurando limpieza previa de mensajes
             db.ref(salaActual).on("value", (snapshot) => {
                 const box = document.getElementById("messages");
-                box.innerHTML = "";
+                let htmlTemp = ""; // Usamos una variable temporal para construir el HTML y evitar renderizados parciales
+
                 snapshot.forEach((child) => {
                     const data = child.val();
                     const msgId = child.key;
                     const esMio = data.u === usuarioActual;
 
+                    // Manejo de visto y notificaciones
                     if (!esMio && data.r === false) {
                         if (document.visibilityState === 'visible') {
                             db.ref(`${salaActual}/${msgId}/r`).set(true);
@@ -472,11 +475,10 @@
                         }
                     }
 
-                    const msgDiv = document.createElement("div");
-                    msgDiv.className = `msg ${esMio ? 'me' : 'other'}`;
-                    msgDiv.ondblclick = () => reaccionar(msgId);
-
+                    // Construcción del mensaje
+                    const alineacion = esMio ? 'me' : 'other';
                     let contenido = !esMio ? `<small>${data.u}</small>` : "";
+                    
                     if(data.t) contenido += `<span>${data.t}</span>`;
                     if(data.file) {
                         if(data.fileType.startsWith("image/")) {
@@ -497,14 +499,16 @@
                     }
 
                     const checkClass = data.r ? "read" : "";
-                    contenido += `<div class="status-info">
+                    const statusInfo = `<div class="status-info">
                         <span class="timestamp">${data.h || '--:--'}</span>
                         ${esMio ? `<i class="fas fa-check-double check-icon ${checkClass}"></i>` : ''}
                     </div>`;
 
-                    msgDiv.innerHTML = contenido;
-                    box.appendChild(msgDiv);
+                    htmlTemp += `<div class="msg ${alineacion}" ondblclick="reaccionar('${msgId}')">${contenido}${statusInfo}</div>`;
                 });
+
+                // Actualizamos el DOM una sola vez
+                box.innerHTML = htmlTemp;
                 box.scrollTop = box.scrollHeight;
             });
         }
@@ -526,7 +530,6 @@
             if (savedUser) registrarUsuario(savedUser);
         };
 
-        // PASO 3: REGISTRO DEL SERVICE WORKER
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
             .then(() => console.log("Service Worker Registrado con éxito"));
