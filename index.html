@@ -26,13 +26,16 @@
             background: radial-gradient(circle at center, #1a1a20 0%, #0f0f12 100%);
             color: white;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            /* Evitamos que el cuerpo se desplace solo en móviles */
+            position: fixed;
+            width: 100%;
         }
 
         /* --- CONTENEDORES PRINCIPALES --- */
         #login, #contacts-container, #chat-container {
             display: none;
             width: 100%;
-            height: 100dvh; 
+            height: 100%; 
             max-width: 100vw; 
             overflow: hidden;
             position: relative;
@@ -85,9 +88,9 @@
             cursor: pointer;
         }
 
-        /* --- AJUSTE CLAVE: HEADER FIJO --- */
+        /* --- HEADER FIJO --- */
         .header { 
-            position: fixed; /* Cambiado a fixed para que no se desplace */
+            position: fixed; /* FIXED para que no se mueva */
             top: 0;
             left: 0;
             width: 100%;
@@ -98,14 +101,14 @@
             padding: 0 15px; 
             background: #1a1a20; 
             border-bottom: 1px solid #333; 
-            z-index: 1000; /* Asegurar que esté sobre todo */
+            z-index: 2000;
         }
 
-        /* --- ÁREA DE MENSAJES AJUSTADA --- */
+        /* --- ÁREA DE MENSAJES --- */
         #lista-usuarios, #messages { 
             position: absolute;
-            top: 65px; /* Comienza después del header */
-            bottom: 70px; /* Deja espacio para el input fijo */
+            top: 65px; 
+            bottom: 70px; 
             left: 0;
             right: 0;
             overflow-y: auto; 
@@ -138,9 +141,9 @@
         .msg.me { background: #007bff; border-bottom-right-radius: 2px; color: white; }
         .msg.other { background: #2c2c34; border-bottom-left-radius: 2px; color: white; }
 
-        /* --- INPUT ÁREA FIJA --- */
+        /* --- FOOTER FIJO --- */
         .input-area { 
-            position: fixed; /* Cambiado a fixed para anclarlo abajo */
+            position: fixed; /* FIXED para el teclado */
             bottom: 0;
             left: 0;
             width: 100%;
@@ -151,7 +154,7 @@
             gap: 10px; 
             align-items: center; 
             border-top: 1px solid #333;
-            z-index: 1000;
+            z-index: 2000;
         }
 
         textarea#msg-input { 
@@ -194,7 +197,7 @@
             flex-shrink: 0; 
         }
 
-        /* --- OTROS COMPONENTES --- */
+        /* --- OTROS --- */
         .contact-card { background: #1a1a20; padding: 15px; margin: 10px; border-radius: 12px; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
         .unread-badge { background: #007bff; color: white; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: bold; margin-right: 12px; }
         .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
@@ -208,17 +211,17 @@
             border: 1px solid #333; 
             padding: 10px; 
             border-radius: 15px; 
-            z-index: 2000; 
+            z-index: 3000; 
             grid-template-columns: repeat(5, 1fr); 
             gap: 12px;
             box-shadow: 0 5px 25px rgba(0,0,0,0.9); 
         }
 
         .emoji-item { cursor: pointer; font-size: 1.3rem; text-align: center; }
-        .emoji-picker { display: none; position: absolute; bottom: 75px; left: 10px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 2000; }
+        .emoji-picker { display: none; position: absolute; bottom: 75px; left: 10px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 3000; }
         .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 10px; opacity: 0.7; }
         .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 10px; border-radius: 8px; font-size: 14px; }
-        #scroll-down { position: fixed; bottom: 90px; right: 20px; background: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; z-index: 90; }
+        #scroll-down { position: fixed; bottom: 90px; right: 20px; background: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; z-index: 1000; }
 
         .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -306,7 +309,7 @@
     </div>
 
     <script>
-        /* MANTENGO TODO TU SCRIPT ORIGINAL EXACTAMENTE IGUAL */
+        /* TUS DATOS DE FIREBASE */
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -323,14 +326,20 @@
         let salaActual = "";
         let typingTimeout, mediaRecorder, audioChunks = [], isRecording = false, msgIdParaReaccionar = "";
 
+        /* CONTROL DEL TECLADO */
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                document.body.style.height = window.visualViewport.height + 'px';
+                scrollToBottom();
+            });
+        }
+
         function autoResize(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = (textarea.scrollHeight) + 'px';
-
             const messages = document.getElementById('messages');
             const inputAreaHeight = document.querySelector('.input-area').offsetHeight;
-            messages.style.bottom = (inputAreaHeight) + 'px';
-
+            messages.style.bottom = inputAreaHeight + 'px';
             if (salaActual) db.ref(`typing/${salaActual}/${usuarioActual}`).set(true);
             clearTimeout(typingTimeout);
             typingTimeout = setTimeout(() => db.ref(`typing/${salaActual}/${usuarioActual}`).set(false), 1500);
@@ -346,14 +355,11 @@
                 localStorage.setItem('urrichat_user', user);
                 db.ref("usuarios/" + user).set("online");
                 db.ref("usuarios/" + user).onDisconnect().set("offline");
-
                 const ultimaSala = localStorage.getItem('urrichat_last_room');
                 const ultimoTitulo = localStorage.getItem('urrichat_last_title');
-
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('mi-perfil').innerText = "● " + user;
                 escucharUsuarios();
-
                 if (ultimaSala && ultimaSala !== "contacts") {
                     abrirChat(ultimaSala, ultimoTitulo || "Chat");
                 } else {
@@ -399,11 +405,11 @@
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = title;
             escucharMensajes();
-
             setTimeout(() => {
                 const input = document.getElementById('msg-input');
                 input.style.height = 'auto';
                 document.getElementById('messages').style.bottom = document.querySelector('.input-area').offsetHeight + 'px';
+                scrollToBottom();
             }, 100);
         }
 
@@ -416,7 +422,6 @@
                     const d = child.val();
                     const esMio = d.u === usuarioActual;
                     if(!esMio && !d.r) db.ref(`${salaActual}/${child.key}/r`).set(true);
-
                     let content = !esMio ? `<small style="color:#888; font-weight:bold; font-size:11px; margin-bottom:4px; display:block;">${d.u}</small>` : "";
                     if(d.t) content += `<span>${d.t}</span>`;
                     if(d.file) {
@@ -424,13 +429,11 @@
                         else if(d.fileType?.includes("audio")) content += `<audio controls src="${d.file}" style="width:200px; height:35px; margin-top:5px; display:block;"></audio>`;
                         else content += `<a href="${d.file}" style="color:white; font-size:12px; margin-top:5px; display:block;">Archivo</a>`;
                     }
-
                     if(d.reacciones) {
                         content += `<div style="display:flex;gap:4px;margin-top:5px">`;
                         for(let e in d.reacciones) content += `<span style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:10px;font-size:11px">${e} ${d.reacciones[e]}</span>`;
                         content += `</div>`;
                     }
-
                     html += `<div class="msg-container ${esMio?'me':'other'}">
                                 <div class="msg ${esMio?'me':'other'}" ondblclick="reaccionar(event,'${child.key}')">
                                     ${content}
@@ -440,6 +443,11 @@
                 });
                 box.innerHTML = html;
                 scrollToBottom();
+            });
+            db.ref(`typing/${salaActual}`).on("value", (snap) => {
+                let typing = false;
+                snap.forEach(c => { if(c.key !== usuarioActual && c.val()) typing = true; });
+                document.getElementById('chat-subtitle').style.display = typing ? 'block' : 'none';
             });
         }
 
@@ -501,32 +509,26 @@
 
         function scrollToBottom() { const b = document.getElementById("messages"); b.scrollTop = b.scrollHeight; }
         function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; }
-
         function volverAContactos() { 
             salaActual = ""; 
             localStorage.setItem('urrichat_last_room', 'contacts');
             document.getElementById('chat-container').style.display = 'none'; 
             document.getElementById('contacts-container').style.display = 'flex'; 
         }
-
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
         function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='grid'?'none':'grid'; }
-        function addEmoji(e) { document.getElementById('msg-input').value += e; cerrarSelectores(); }
-        function vaciarChat() { if(confirm("¿Estás seguro de que deseas vaciar este chat?")) db.ref(salaActual).remove(); }
-
+        function addEmoji(e) { document.getElementById('msg-input').value += e; autoResize(document.getElementById('msg-input')); cerrarSelectores(); }
+        function vaciarChat() { if(confirm("¿Estás seguro?")) db.ref(salaActual).remove(); }
         function confirmarSalida() {
-            if (confirm("¿Estás seguro que deseas cerrar sesión?")) {
+            if (confirm("¿Cerrar sesión?")) {
                 db.ref("usuarios/" + usuarioActual).set("offline");
-                localStorage.removeItem('urrichat_user');
-                localStorage.removeItem('urrichat_last_room');
-                localStorage.removeItem('urrichat_last_title');
+                localStorage.clear();
                 location.reload();
             }
         }
-
         function editarNombre() {
             let n = prompt("Nuevo nombre:", usuarioActual);
-            if (n !== null && n.trim() !== "" && n !== usuarioActual) {
+            if (n && n.trim() !== "") {
                 db.ref("usuarios/" + usuarioActual).set("offline");
                 usuarioActual = n.trim();
                 localStorage.setItem('urrichat_user', usuarioActual);
@@ -534,7 +536,6 @@
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
             }
         }
-
         function enviarArchivo(input) {
             const file = input.files[0];
             if (file) {
