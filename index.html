@@ -17,12 +17,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         /* --- ESTILOS BASE --- */
-        * { box-sizing: border-box; } /* Asegura que los botones no se salgan */
+        * { box-sizing: border-box; } 
         html, body { 
             height: 100%; 
             margin: 0; 
             padding: 0; 
-            overflow-y: auto; /* Permite actualizar con scroll hacia abajo */
+            overflow-y: auto; /* Permite pull-to-refresh */
+            overscroll-behavior-y: contain;
             background: radial-gradient(circle at center, #1a1a20 0%, #0f0f12 100%);
             color: white;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -34,6 +35,8 @@
             width: 100%;
             height: 100vh;
             height: -webkit-fill-available;
+            max-width: 100vw; /* Evita desborde lateral */
+            overflow-x: hidden;
         }
 
         #contacts-container, #chat-container {
@@ -94,6 +97,7 @@
             background: #1a1a20; 
             border-bottom: 1px solid #333; 
             z-index: 100;
+            width: 100%; /* Ajuste preciso */
         }
 
         /* --- ÁREA DE MENSAJES --- */
@@ -116,21 +120,21 @@
         .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; }
         .msg.other { align-self: flex-start; background: #2c2c34; border-bottom-left-radius: 2px; }
 
-        /* --- FOOTER AJUSTADO (Sin márgenes que corten botones) --- */
+        /* --- FOOTER AJUSTADO --- */
         .input-area { 
             padding: 10px 15px;
             padding-bottom: calc(10px + env(safe-area-inset-bottom)); 
             background: #1a1a20; 
             display: flex; 
-            gap: 12px; 
+            gap: 8px; 
             align-items: center; 
             border-top: 1px solid #333;
-            width: 100%;
+            width: 100%; /* Asegura que no se salga */
         }
 
         textarea#msg-input { 
             flex: 1; 
-            padding: 12px 15px; 
+            padding: 10px 15px; 
             border-radius: 25px; 
             border: none; 
             background: #2c2c34; 
@@ -146,16 +150,17 @@
             background: transparent;
             border: none;
             color: #007bff;
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            min-width: 35px;
         }
 
         button#main-btn { 
-            width: 45px; 
-            height: 45px; 
+            width: 42px; 
+            height: 42px; 
             background: #007bff; 
             color: white; 
             border: none; 
@@ -192,6 +197,10 @@
         .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 9px; opacity: 0.7; }
         .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 10px; border-radius: 8px; font-size: 14px; }
         #scroll-down { position: fixed; bottom: 90px; right: 20px; background: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; z-index: 90; }
+        
+        /* Efecto grabación mic */
+        .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body onclick="cerrarSelectores()">
@@ -216,7 +225,7 @@
         </div>
         <div id="lista-usuarios">
             <div class="contact-card" onclick="abrirChat('muro', 'Chat Grupal')" style="border-left: 5px solid #007bff;">
-                <span><i class="fas fa-users" style="margin-right: 10px;"></i> Chat Grupal</span>
+                <span><i class="fas fa-users" style="margin-right: 10px; color: #007bff;"></i> Chat Grupal</span>
                 <div style="display:flex; align-items:center;">
                     <span id="badge-muro"></span>
                     <span class="online-dot dot-online"></span>
@@ -325,7 +334,7 @@
                         const salaID = "privado_" + [usuarioActual, child.key].sort().join("_");
                         const card = document.createElement("div");
                         card.className = "contact-card";
-                        card.innerHTML = `<span><i class="fas fa-user" style="margin-right:10px; opacity:0.5"></i>${child.key}</span><div style="display:flex;align-items:center"><span id="badge-${salaID}"></span><span class="online-dot ${child.val()==='online'?'dot-online':'dot-offline'}"></span></div>`;
+                        card.innerHTML = `<span><i class="fas fa-user" style="margin-right:10px; color: #007bff;"></i>${child.key}</span><div style="display:flex;align-items:center"><span id="badge-${salaID}"></span><span class="online-dot ${child.val()==='online'?'dot-online':'dot-offline'}"></span></div>`;
                         card.onclick = () => abrirChat(salaID, child.key);
                         list.appendChild(card);
                         verificarMensajesNuevos(salaID);
@@ -365,7 +374,7 @@
                     if(d.t) content += `<span>${d.t}</span>`;
                     if(d.file) {
                         if(d.fileType?.includes("image")) content += `<img src="${d.file}" class="attachment" style="max-width:100%; border-radius:10px; margin-top:5px;">`;
-                        else if(d.fileType?.includes("audio")) content += `<audio controls src="${d.file}" style="width:200px; height:30px; margin-top:5px;"></audio>`;
+                        else if(d.fileType?.includes("audio")) content += `<audio controls src="${d.file}" style="width:200px; height:35px; margin-top:5px;"></audio>`;
                         else content += `<a href="${d.file}" style="color:white; font-size:12px; margin-top:5px;">Archivo</a>`;
                     }
                     
@@ -391,6 +400,36 @@
             }
         }
 
+        /* LÓGICA DE AUDIO */
+        async function toggleAudio() {
+            const btn = document.getElementById('mic-btn');
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = async () => {
+                        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        reader.onloadend = () => {
+                            const h = new Date().getHours() + ":" + new Date().getMinutes().toString().padStart(2, '0');
+                            db.ref(salaActual).push({ u: usuarioActual, file: reader.result, fileType: 'audio', h: h, r: false });
+                        };
+                        stream.getTracks().forEach(t => t.stop());
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.classList.add('recording');
+                } catch (err) { alert("Error al acceder al micrófono"); }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.classList.remove('recording');
+            }
+        }
+
         function reaccionar(e, id) {
             e.stopPropagation();
             msgIdParaReaccionar = id;
@@ -411,7 +450,7 @@
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
         function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='grid'?'none':'grid'; }
         function addEmoji(e) { document.getElementById('msg-input').value += e; cerrarSelectores(); }
-        function vaciarChat() { if(confirm("¿Estás seguro de que deseas vaciar este chat? Esta acción no se puede deshacer.")) db.ref(salaActual).remove(); }
+        function vaciarChat() { if(confirm("¿Estás seguro de que deseas vaciar este chat?")) db.ref(salaActual).remove(); }
         
         function confirmarSalida() {
             if (confirm("¿Estás seguro que deseas cerrar sesión?")) {
@@ -419,7 +458,6 @@
                 document.getElementById('contacts-container').style.display = 'none';
                 document.getElementById('chat-container').style.display = 'none';
                 document.getElementById('login').style.display = 'flex';
-                // Mantiene el usuario en el campo pero limpia la variable activa
                 usuarioActual = "";
             }
         }
@@ -432,6 +470,18 @@
                 localStorage.setItem('urrichat_user', usuarioActual);
                 db.ref("usuarios/" + usuarioActual).set("online");
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
+            }
+        }
+
+        function enviarArchivo(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const h = new Date().getHours() + ":" + new Date().getMinutes().toString().padStart(2, '0');
+                    db.ref(salaActual).push({ u: usuarioActual, file: reader.result, fileType: file.type, h: h, r: false });
+                };
             }
         }
         
