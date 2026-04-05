@@ -85,9 +85,9 @@
             cursor: pointer;
         }
 
-        /* --- CORRECCIÓN DEFINITIVA: HEADER FIXED --- */
+        /* --- AJUSTE CLAVE: HEADER FIJO --- */
         .header { 
-            position: fixed; /* Cambiado de absolute a fixed */
+            position: fixed; /* Cambiado a fixed para que no se desplace */
             top: 0;
             left: 0;
             width: 100%;
@@ -98,23 +98,24 @@
             padding: 0 15px; 
             background: #1a1a20; 
             border-bottom: 1px solid #333; 
-            z-index: 1000; /* Asegura que esté por encima de todo */
+            z-index: 1000; /* Asegurar que esté sobre todo */
         }
 
-        /* --- ÁREA DE MENSAJES --- */
+        /* --- ÁREA DE MENSAJES AJUSTADA --- */
         #lista-usuarios, #messages { 
-            margin-top: 65px; /* Empuja el contenido debajo del header fijo */
-            flex: 1;
+            position: absolute;
+            top: 65px; /* Comienza después del header */
+            bottom: 70px; /* Deja espacio para el input fijo */
+            left: 0;
+            right: 0;
             overflow-y: auto; 
             padding: 15px 0;
             display: flex;
             flex-direction: column;
             -webkit-overflow-scrolling: touch; 
-            /* Espacio inferior para el input */
-            margin-bottom: 70px; 
         }
 
-        #lista-usuarios { margin-bottom: 0; }
+        #lista-usuarios { bottom: 0; }
 
         /* --- BURBUJAS --- */
         .msg-container {
@@ -137,9 +138,9 @@
         .msg.me { background: #007bff; border-bottom-right-radius: 2px; color: white; }
         .msg.other { background: #2c2c34; border-bottom-left-radius: 2px; color: white; }
 
-        /* --- FOOTER FIXED ABAJO --- */
+        /* --- INPUT ÁREA FIJA --- */
         .input-area { 
-            position: fixed; /* Cambiado a fixed */
+            position: fixed; /* Cambiado a fixed para anclarlo abajo */
             bottom: 0;
             left: 0;
             width: 100%;
@@ -214,7 +215,7 @@
         }
 
         .emoji-item { cursor: pointer; font-size: 1.3rem; text-align: center; }
-        .emoji-picker { display: none; position: absolute; bottom: 75px; left: 10px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 200; }
+        .emoji-picker { display: none; position: absolute; bottom: 75px; left: 10px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 2000; }
         .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 10px; opacity: 0.7; }
         .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 10px; border-radius: 8px; font-size: 14px; }
         #scroll-down { position: fixed; bottom: 90px; right: 20px; background: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; z-index: 90; }
@@ -328,7 +329,7 @@
 
             const messages = document.getElementById('messages');
             const inputAreaHeight = document.querySelector('.input-area').offsetHeight;
-            messages.style.marginBottom = inputAreaHeight + 'px';
+            messages.style.bottom = (inputAreaHeight) + 'px';
 
             if (salaActual) db.ref(`typing/${salaActual}/${usuarioActual}`).set(true);
             clearTimeout(typingTimeout);
@@ -402,7 +403,7 @@
             setTimeout(() => {
                 const input = document.getElementById('msg-input');
                 input.style.height = 'auto';
-                document.getElementById('messages').style.marginBottom = document.querySelector('.input-area').offsetHeight + 'px';
+                document.getElementById('messages').style.bottom = document.querySelector('.input-area').offsetHeight + 'px';
             }, 100);
         }
 
@@ -450,7 +451,7 @@
                 db.ref(salaActual).push({ u: usuarioActual, t: i.value, h: h, r: false });
                 i.value = ""; 
                 i.style.height = 'auto';
-                document.getElementById('messages').style.marginBottom = document.querySelector('.input-area').offsetHeight + 'px';
+                document.getElementById('messages').style.bottom = document.querySelector('.input-area').offsetHeight + 'px';
             }
         }
 
