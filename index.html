@@ -22,35 +22,34 @@
             height: 100%; 
             margin: 0; 
             padding: 0; 
-            overflow-y: auto; 
             background: radial-gradient(circle at center, #1a1a20 0%, #0f0f12 100%);
             color: white;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             -webkit-overflow-scrolling: touch;
-            overscroll-behavior-y: contain; /* Para actualización por deslizamiento */
+            overflow-x: hidden;
+            overflow-y: auto;
+            overscroll-behavior-y: contain; /* Permite pull-to-refresh nativo */
         }
 
         /* --- CONTENEDORES --- */
         #login, #contacts-container, #chat-container {
             display: none;
             width: 100%;
-            min-height: 100vh;
             max-width: 100vw; 
         }
 
-        /* Login Fijo solicitado */
         #login { 
+            height: 100vh;
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
             align-items: center; 
             gap: 25px; 
             text-align: center;
-            height: 100vh;
-            overflow: hidden; 
+            overflow: hidden;
         }
 
-        #contacts-container, #chat-container { flex-direction: column; }
+        #contacts-container, #chat-container { flex-direction: column; min-height: 100vh; }
 
         .login-box { width: 85%; max-width: 380px; padding: 40px; background: rgba(26, 26, 32, 0.8); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 30px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); }
 
@@ -74,7 +73,7 @@
         /* --- MENSAJES --- */
         #messages { 
             flex: 1;
-            padding: 15px 0 85px 0; /* Padding inferior para el footer fijo */
+            padding: 15px 0 90px 0; /* Espacio para el footer fijo */
             display: flex;
             flex-direction: column;
             overflow-y: auto;
@@ -88,7 +87,7 @@
         .msg.me { background: #007bff; border-bottom-right-radius: 2px; color: white; }
         .msg.other { background: #2c2c34; border-bottom-left-radius: 2px; color: white; }
 
-        /* --- FOOTER FIJO (Para que no se oculte) --- */
+        /* --- FOOTER FIJO --- */
         .input-area { 
             height: 70px;
             padding: 10px 12px;
@@ -97,7 +96,7 @@
             gap: 10px; 
             align-items: center; 
             border-top: 1px solid #333;
-            position: fixed; 
+            position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
@@ -108,7 +107,7 @@
         .footer-btn { background: transparent; border: none; color: #007bff; font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; min-width: 30px; }
         button#main-btn { width: 42px; height: 42px; background: #007bff; color: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-        /* --- REACCIONES Y EMOJIS (10 RESTAURADOS) --- */
+        /* --- REACCIONES Y EMOJIS (10) --- */
         #reaction-selector { 
             display: none; 
             position: fixed; 
@@ -124,10 +123,15 @@
         .emoji-item { cursor: pointer; font-size: 1.3rem; text-align: center; }
         .emoji-picker { display: none; position: absolute; bottom: 80px; left: 10px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 1100; }
 
-        /* --- EXTRAS --- */
+        /* --- EXTRAS RESTAURADOS --- */
         .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 10px; opacity: 0.7; }
         .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 10px; border-radius: 8px; font-size: 14px; }
-        .contact-card { background: #1a1a20; padding: 15px; margin: 10px; border-radius: 12px; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
+        .contact-card { background: #1a1a20; padding: 15px; margin: 10px; border-radius: 12px; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+        .unread-badge { background: #007bff; color: white; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
+        .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-left: 10px; }
+        .dot-online { background-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+        .dot-offline { background-color: #ff4444; }
+        
         #scroll-down { position: fixed; bottom: 85px; right: 20px; background: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; z-index: 900; }
         .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -155,7 +159,7 @@
         <div id="lista-usuarios">
             <div class="contact-card" onclick="abrirChat('muro', 'Chat Grupal')" style="border-left: 5px solid #007bff;">
                 <span><i class="fas fa-users" style="margin-right: 10px; color: #007bff;"></i> Chat Grupal</span>
-                <span id="badge-muro"></span>
+                <span id="badge-muro" class="unread-badge" style="display:none;">0</span>
             </div>
             <div id="usuarios-conectados"></div>
         </div>
@@ -245,11 +249,23 @@
                         const salaID = "privado_" + [usuarioActual, child.key].sort().join("_");
                         const card = document.createElement("div");
                         card.className = "contact-card";
-                        card.innerHTML = `<span>${child.key}</span><span class="online-dot ${child.val()==='online'?'dot-online':'dot-offline'}"></span>`;
+                        const statusClass = child.val() === 'online' ? 'dot-online' : 'dot-offline';
+                        card.innerHTML = `
+                            <span><i class="fas fa-user" style="margin-right: 10px; color: #888;"></i> ${child.key}</span>
+                            <span class="online-dot ${statusClass}"></span>
+                        `;
                         card.onclick = () => abrirChat(salaID, child.key);
                         list.appendChild(card);
                     }
                 });
+            });
+            // Escuchar badge del muro
+            db.ref("muro").on("value", (snap) => {
+                let count = 0;
+                snap.forEach(c => { if(c.val().u !== usuarioActual && !c.val().r) count++; });
+                const badge = document.getElementById('badge-muro');
+                badge.innerText = count;
+                badge.style.display = count > 0 ? 'inline-block' : 'none';
             });
         }
 
@@ -274,20 +290,20 @@
                     if(!esMio && !d.r) db.ref(`${salaActual}/${child.key}/r`).set(true);
                     let content = d.t ? `<span>${d.t}</span>` : "";
                     if(d.file) {
-                        if(d.fileType?.includes("image")) content += `<img src="${d.file}" style="max-width:100%; border-radius:10px;">`;
-                        else if(d.fileType?.includes("audio")) content += `<audio controls src="${d.file}" style="width:180px;"></audio>`;
-                        else content += `<a href="${d.file}" style="color:white">Archivo</a>`;
+                        if(d.fileType?.includes("image")) content += `<img src="${d.file}" style="max-width:100%; border-radius:10px; margin-top:5px;">`;
+                        else if(d.fileType?.includes("audio")) content += `<audio controls src="${d.file}" style="width:180px; margin-top:5px;"></audio>`;
+                        else content += `<a href="${d.file}" style="color:white; display:block; margin-top:5px;"><i class="fas fa-file"></i> Archivo</a>`;
                     }
                     if(d.reacciones) {
-                        content += `<div style="display:flex;gap:3px;margin-top:5px">`;
-                        for(let e in d.reacciones) content += `<span style="background:rgba(0,0,0,0.2);padding:2px 5px;border-radius:10px;font-size:11px">${e} ${d.reacciones[e]}</span>`;
+                        content += `<div style="display:flex; gap:3px; margin-top:5px flex-wrap: wrap;">`;
+                        for(let e in d.reacciones) content += `<span style="background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:10px; font-size:12px">${e} ${d.reacciones[e]}</span>`;
                         content += `</div>`;
                     }
                     html += `<div class="msg-container ${esMio?'me':'other'}">
                         <div class="msg ${esMio?'me':'other'}" ondblclick="reaccionar(event,'${child.key}')">
-                            ${!esMio?'<small style="color:#888;display:block">'+d.u+'</small>':''}
+                            ${!esMio?'<small style="color:#aaa; font-weight:bold; display:block; margin-bottom:3px;">'+d.u+'</small>':''}
                             ${content}
-                            <div class="status-info">${d.h} ${esMio?(d.r?'<i class="fas fa-check-double" style="color:#88ccff"></i>':'<i class="fas fa-check"></i>'):''}</div>
+                            <div class="status-info">${d.h} ${esMio?(d.r?'<i class="fas fa-check-double" style="color:#00d2ff"></i>':'<i class="fas fa-check"></i>'):''}</div>
                         </div>
                     </div>`;
                 });
@@ -299,13 +315,14 @@
         function enviar() {
             const i = document.getElementById('msg-input');
             if (i.value.trim() && salaActual) {
-                const h = new Date().getHours() + ":" + new Date().getMinutes().toString().padStart(2,'0');
+                const now = new Date();
+                const h = now.getHours() + ":" + now.getMinutes().toString().padStart(2,'0');
                 db.ref(salaActual).push({ u: usuarioActual, t: i.value, h: h, r: false });
                 i.value = ""; i.style.height = 'auto';
             }
         }
 
-        function reaccionar(e, id) { e.stopPropagation(); msgIdParaReaccionar = id; const s = document.getElementById('reaction-selector'); s.style.display = 'grid'; s.style.top = (e.clientY-50)+'px'; s.style.left = '50px'; }
+        function reaccionar(e, id) { e.stopPropagation(); msgIdParaReaccionar = id; const s = document.getElementById('reaction-selector'); s.style.display = 'grid'; s.style.top = (e.clientY-60)+'px'; s.style.left = '50px'; }
         function aplicarReaccion(emoji) { db.ref(`${salaActual}/${msgIdParaReaccionar}/reacciones/${emoji}`).transaction(v => (v || 0) + 1); cerrarSelectores(); }
         function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='grid'?'none':'grid'; }
         function addEmoji(e) { document.getElementById('msg-input').value += e; cerrarSelectores(); }
@@ -316,16 +333,7 @@
         function scrollToBottom() { const b = document.getElementById("messages"); b.scrollTop = b.scrollHeight; }
         function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; }
         function vaciarChat() { if(confirm("¿Vaciar chat?")) db.ref(salaActual).remove(); }
-        
-        function confirmarSalida() { 
-            if(confirm("¿Cerrar sesión?")) { 
-                db.ref("usuarios/"+usuarioActual).set("offline"); 
-                localStorage.removeItem('urrichat_active'); 
-                localStorage.removeItem('urrichat_last_room');
-                location.reload(); 
-            } 
-        }
-
+        function confirmarSalida() { if(confirm("¿Cerrar sesión?")) { db.ref("usuarios/"+usuarioActual).set("offline"); localStorage.removeItem('urrichat_active'); location.reload(); } }
         function editarNombre() { let n = prompt("Nuevo nombre:", usuarioActual); if(n) { db.ref("usuarios/"+usuarioActual).set("offline"); usuarioActual = n; localStorage.setItem('urrichat_user', n); db.ref("usuarios/"+n).set("online"); location.reload(); } }
         
         async function toggleAudio() {
