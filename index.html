@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>UrriChat</title>
 
     <link rel="manifest" href="manifest.json">
@@ -36,7 +36,6 @@
         }
 
         #contacts-container, #chat-container {
-            display: none;
             grid-template-rows: auto 1fr auto; 
             flex-direction: column;
         }
@@ -85,7 +84,7 @@
             cursor: pointer;
         }
 
-        /* --- CONTACTOS Y CHAT --- */
+        /* --- HEADER --- */
         .header { 
             height: 60px;
             display: flex; 
@@ -94,36 +93,86 @@
             padding: 0 15px; 
             background: #1a1a20; 
             border-bottom: 1px solid #333; 
-            position: sticky;
-            top: 0;
             z-index: 100;
         }
 
+        /* --- ÁREA DE MENSAJES --- */
         #lista-usuarios, #messages { 
             flex: 1; 
             overflow-y: auto; 
+            padding: 10px 0;
             -webkit-overflow-scrolling: touch; 
         }
 
+        .msg { 
+            padding: 10px 15px; 
+            border-radius: 18px; 
+            max-width: 80%; 
+            margin: 0 15px 12px 15px; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+        }
+        .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; }
+        .msg.other { align-self: flex-start; background: #2c2c34; border-bottom-left-radius: 2px; }
+
+        /* --- FOOTER AJUSTADO --- */
         .input-area { 
-            padding: 10px 15px;
-            padding-bottom: env(safe-area-inset-bottom, 15px); 
+            padding: 10px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom)); 
             background: #1a1a20; 
             display: flex; 
-            gap: 8px; 
-            align-items: flex-end; 
+            gap: 10px; 
+            align-items: center; 
             border-top: 1px solid #333;
         }
 
-        .contact-card { background: #1a1a20; padding: 15px; margin: 10px; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
+        textarea#msg-input { 
+            flex: 1; 
+            padding: 12px 15px; 
+            border-radius: 25px; 
+            border: none; 
+            background: #2c2c34; 
+            color: white; 
+            outline: none; 
+            resize: none; 
+            font-size: 16px; 
+            max-height: 100px;
+            line-height: 1.2;
+        }
+
+        .footer-btn {
+            background: transparent;
+            border: none;
+            color: #007bff;
+            font-size: 1.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+        }
+
+        button#main-btn { 
+            width: 42px; 
+            height: 42px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-shrink: 0; 
+        }
+
+        /* --- COMPONENTES ADICIONALES --- */
+        .contact-card { background: #1a1a20; padding: 15px; margin: 10px; border-radius: 12px; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
         .unread-badge { background: #007bff; color: white; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: bold; margin-right: 12px; }
         .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
         .dot-online { background-color: #2ecc71; }
         .dot-offline { background-color: #ff4444; }
-
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; margin-bottom: 15px; display: flex; flex-direction: column; position: relative; }
-        .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; margin-right: 15px; }
-        .msg.other { align-self: flex-start; background: #2c2c34; border-bottom-left-radius: 2px; margin-left: 15px; }
 
         #reaction-selector { 
             display: none; 
@@ -139,15 +188,9 @@
         }
 
         .emoji-item { cursor: pointer; font-size: 1.3rem; text-align: center; }
-        .emoji-picker { display: none; position: absolute; bottom: 75px; left: 15px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 100; }
-
-        textarea#msg-input { flex: 1; padding: 10px 15px; border-radius: 20px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-size: 16px; max-height: 120px; }
-        button#main-btn { width: 45px; height: 45px; background: #007bff; color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        
-        .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 8px; font-size: 14px; }
-        .attachment { max-width: 100%; border-radius: 8px; margin-top: 5px; }
+        .emoji-picker { display: none; position: absolute; bottom: 75px; left: 10px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 100; }
         .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 9px; opacity: 0.7; }
-        
+        .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 10px; border-radius: 8px; font-size: 14px; }
         #scroll-down { position: fixed; bottom: 90px; right: 20px; background: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; z-index: 90; }
     </style>
 </head>
@@ -168,7 +211,7 @@
             <span id="mi-perfil" style="font-weight: bold; color: #2ecc71;"></span>
             <div style="display: flex; gap: 8px;">
                 <button class="btn-header" onclick="editarNombre()"><i class="fas fa-user-edit"></i></button>
-                <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt"></i></button>
+                <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="confirmarSalida()"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
         <div id="lista-usuarios">
@@ -210,10 +253,10 @@
                 <span class="emoji-item" onclick="addEmoji('😎')">😎</span>
                 <span class="emoji-item" onclick="addEmoji('🎉')">🎉</span>
             </div>
+            <button class="footer-btn" onclick="toggleEmojiPicker(event)"><i class="far fa-smile"></i></button>
             <input type="file" id="file-input" style="display:none" onchange="enviarArchivo(this)">
-            <button class="btn-header" style="border:none" onclick="toggleEmojiPicker(event)"><i class="far fa-smile" style="font-size: 1.5rem;"></i></button>
-            <button class="btn-header" style="border:none" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip" style="font-size: 1.3rem;"></i></button>
-            <button class="btn-header" style="border:none" id="mic-btn" onclick="toggleAudio()"><i class="fas fa-microphone" style="font-size: 1.3rem;"></i></button>
+            <button class="footer-btn" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip"></i></button>
+            <button class="footer-btn" id="mic-btn" onclick="toggleAudio()"><i class="fas fa-microphone"></i></button>
             <textarea id="msg-input" placeholder="Mensaje..." rows="1" oninput="autoResize(this)" onkeydown="checkEnter(event)"></textarea>
             <button id="main-btn" onclick="enviar()"><i class="fas fa-paper-plane"></i></button>
         </div>
@@ -318,17 +361,17 @@
                     const esMio = d.u === usuarioActual;
                     if(!esMio && !d.r) db.ref(`${salaActual}/${child.key}/r`).set(true);
                     
-                    let content = !esMio ? `<small>${d.u}</small>` : "";
+                    let content = !esMio ? `<small style="color:#888; font-weight:bold; font-size:11px; margin-bottom:4px;">${d.u}</small>` : "";
                     if(d.t) content += `<span>${d.t}</span>`;
                     if(d.file) {
-                        if(d.fileType.includes("image")) content += `<img src="${d.file}" class="attachment">`;
-                        else if(d.fileType.includes("audio")) content += `<audio controls src="${d.file}"></audio>`;
-                        else content += `<a href="${d.file}" class="file-link">Archivo</a>`;
+                        if(d.fileType?.includes("image")) content += `<img src="${d.file}" class="attachment" style="max-width:100%; border-radius:10px; margin-top:5px;">`;
+                        else if(d.fileType?.includes("audio")) content += `<audio controls src="${d.file}" style="width:200px; height:30px; margin-top:5px;"></audio>`;
+                        else content += `<a href="${d.file}" style="color:white; font-size:12px; margin-top:5px;">Archivo</a>`;
                     }
                     
                     if(d.reacciones) {
                         content += `<div style="display:flex;gap:4px;margin-top:5px">`;
-                        for(let e in d.reacciones) content += `<span style="background:#333;padding:2px 5px;border-radius:10px;font-size:10px">${e} ${d.reacciones[e]}</span>`;
+                        for(let e in d.reacciones) content += `<span style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:10px;font-size:11px">${e} ${d.reacciones[e]}</span>`;
                         content += `</div>`;
                     }
 
@@ -353,8 +396,8 @@
             msgIdParaReaccionar = id;
             const s = document.getElementById('reaction-selector');
             s.style.display = 'grid';
-            s.style.top = (e.clientY > window.innerHeight/2 ? e.clientY-100 : e.clientY+20) + 'px';
-            s.style.left = Math.max(10, Math.min(window.innerWidth-220, e.clientX-100)) + 'px';
+            s.style.top = (e.clientY > window.innerHeight/2 ? e.clientY-120 : e.clientY+20) + 'px';
+            s.style.left = Math.max(10, Math.min(window.innerWidth-230, e.clientX-100)) + 'px';
         }
 
         function aplicarReaccion(emoji) {
@@ -369,11 +412,16 @@
         function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='grid'?'none':'grid'; }
         function addEmoji(e) { document.getElementById('msg-input').value += e; cerrarSelectores(); }
         function vaciarChat() { if(confirm("¿Vaciar?")) db.ref(salaActual).remove(); }
-        function cerrarSesion() { localStorage.clear(); location.reload(); }
         
+        function confirmarSalida() {
+            if (confirm("¿Estás seguro que deseas cerrar sesión?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
         function editarNombre() {
             let n = prompt("Nuevo nombre:", usuarioActual);
-            // Solo cambia si el usuario escribió algo y no canceló
             if (n !== null && n.trim() !== "" && n !== usuarioActual) {
                 db.ref("usuarios/" + usuarioActual).set("offline");
                 usuarioActual = n.trim();
