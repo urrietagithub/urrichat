@@ -60,7 +60,6 @@
         
         .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: flex-end; position: relative; }
         
-        /* CORRECCIÓN: Estilo para que el textarea se vea como tu input anterior */
         textarea#msg-input { 
             flex: 1; 
             padding: 12px 20px; 
@@ -72,7 +71,7 @@
             resize: none; 
             font-family: inherit;
             font-size: 14px;
-            max-height: 150px; /* Para que no ocupe toda la pantalla */
+            max-height: 150px; 
             min-height: 20px;
             overflow-y: auto;
         }
@@ -152,10 +151,20 @@
     </div>
 
     <script>
-        // --- FUNCIÓN DE AJUSTE AUTOMÁTICO ---
+        let typingTimeout;
+        // --- FUNCIÓN DE AJUSTE AUTOMÁTICO + INDICADOR ESCRIBIENDO ---
         function autoResize(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
+            
+            // Lógica Escribiendo
+            if (salaActual && usuarioActual) {
+                db.ref("typing/" + salaActual + "/" + usuarioActual).set(true);
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    db.ref("typing/" + salaActual + "/" + usuarioActual).set(false);
+                }, 2000);
+            }
         }
 
         // Manejar el Enter para enviar (y Shift+Enter para salto de línea)
@@ -242,17 +251,46 @@
         }
 
         function abrirChat(id, titulo) {
-            if(salaActual) db.ref(salaActual).off();
+            if(salaActual) {
+                db.ref(salaActual).off();
+                db.ref("typing/" + salaActual).off(); // Limpiar listener previo
+            }
             salaActual = id;
             document.getElementById('contacts-container').style.display = 'none';
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = titulo;
             document.getElementById('messages').innerHTML = "";
             escucharMensajes();
+            escucharEscribiendo(); // Nueva función
+        }
+
+        function escucharEscribiendo() {
+            db.ref("typing/" + salaActual).on("value", (snap) => {
+                const typingData = snap.val();
+                let escribiendo = [];
+                for (let user in typingData) {
+                    if (typingData[user] === true && user !== usuarioActual) {
+                        escribiendo.push(user);
+                    }
+                }
+                const tituloSpan = document.getElementById('chat-title');
+                if (escribiendo.length > 0) {
+                    if(!tituloSpan.dataset.orig) tituloSpan.dataset.orig = tituloSpan.innerText;
+                    tituloSpan.innerText = escribiendo.join(", ") + " está escribiendo...";
+                    tituloSpan.style.color = "#2ecc71";
+                } else {
+                    tituloSpan.innerText = tituloSpan.dataset.orig || tituloSpan.innerText;
+                    tituloSpan.style.color = "white";
+                }
+            });
         }
 
         function volverAContactos() {
-            if(salaActual) db.ref(salaActual).off();
+            if(salaActual) {
+                db.ref(salaActual).off();
+                db.ref("typing/" + salaActual).off();
+                db.ref("typing/" + salaActual + "/" + usuarioActual).set(false);
+            }
             salaActual = ""; 
             document.getElementById('chat-container').style.display = 'none';
             document.getElementById('contacts-container').style.display = 'flex';
@@ -266,7 +304,7 @@
         function addEmoji(emoji) {
             const input = document.getElementById('msg-input');
             input.value += emoji;
-            autoResize(input); // Ajustar tamaño al añadir emoji
+            autoResize(input); 
             toggleEmojiPicker();
             input.focus();
         }
@@ -286,8 +324,12 @@
                 const ahora = new Date();
                 const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
                 db.ref(salaActual).push({ u: usuarioActual, t: texto, h: horaStr, r: false });
+                
+                // Limpiar estado escribiendo
+                db.ref("typing/" + salaActual + "/" + usuarioActual).set(false);
+                
                 input.value = "";
-                input.style.height = 'auto'; // Resetear altura
+                input.style.height = 'auto'; 
                 input.focus();
             }
         }
