@@ -146,12 +146,14 @@
             Notification.requestPermission();
         }
 
-        function registrarUsuario() {
-            let inputName = document.getElementById('username').value.trim();
+        function registrarUsuario(nombrePersistente) {
+            let inputName = nombrePersistente || document.getElementById('username').value.trim();
             if (inputName) {
                 usuarioActual = inputName;
+                
+                // Guardamos el nombre en el navegador
+                localStorage.setItem('urrichat_user', usuarioActual);
 
-                // ESTO ES CLAVE: Sincronización de presencia real
                 const userRef = db.ref("usuarios/" + usuarioActual);
                 const connectedRef = db.ref(".info/connected");
 
@@ -174,6 +176,8 @@
             if (nuevoNombre && nuevoNombre !== usuarioActual) {
                 db.ref("usuarios/" + usuarioActual).set("offline"); 
                 usuarioActual = nuevoNombre;
+                // Actualizamos también la memoria del navegador
+                localStorage.setItem('urrichat_user', usuarioActual);
                 db.ref("usuarios/" + usuarioActual).set("online");
                 db.ref("usuarios/" + usuarioActual).onDisconnect().set("offline");
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
@@ -181,7 +185,6 @@
         }
 
         function escucharUsuarios() {
-            // Usamos 'value' para asegurar que cualquier cambio de estado (online/offline) dispare el render
             db.ref("usuarios").on("value", (snapshot) => {
                 const listaDiv = document.getElementById("usuarios-conectados");
                 listaDiv.innerHTML = "";
@@ -192,9 +195,7 @@
                     if (nombre !== usuarioActual) {
                         const card = document.createElement("div");
                         card.className = "contact-card";
-                        
                         const statusClass = (estado === "online") ? "dot-online" : "dot-offline";
-                        
                         card.innerHTML = `<span><i class="fas fa-user-circle user-icon" style="margin-right: 10px;"></i>${nombre}</span><span class="online-dot ${statusClass}"></span>`;
                         const salaID = "privado_" + [usuarioActual, nombre].sort().join("_");
                         card.onclick = () => abrirChat(salaID, nombre);
@@ -215,7 +216,7 @@
         }
 
         function volverAContactos() {
-            db.ref(salaActual).off();
+            if(salaActual) db.ref(salaActual).off();
             salaActual = ""; 
             document.getElementById('chat-container').style.display = 'none';
             document.getElementById('contacts-container').style.display = 'flex';
@@ -336,6 +337,14 @@
                 });
             }
         });
+
+        // AUTO-LOGIN AL CARGAR LA PÁGINA
+        window.onload = () => {
+            const savedUser = localStorage.getItem('urrichat_user');
+            if (savedUser) {
+                registrarUsuario(savedUser);
+            }
+        };
     </script>
 </body>
 </html>
