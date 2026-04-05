@@ -15,30 +15,28 @@
             background: radial-gradient(circle at center, #1a1a20 0%, #0f0f12 100%); 
             color: white; 
             margin: 0; 
-            padding: 0;
             display: flex; 
             flex-direction: column; 
             height: 100vh; 
             justify-content: center; 
             align-items: center; 
-            box-sizing: border-box;
         }
 
-        /* --- MEJORA PROFESIONAL DEL LOGIN CON AJUSTE MÓVIL --- */
+        /* --- MEJORA PROFESIONAL DEL LOGIN --- */
         #login { 
             display: flex; 
             flex-direction: column; 
             gap: 25px; 
-            width: calc(100% - 40px); /* Ajuste para que no pegue a los lados en móvil */
+            width: 85%; 
             max-width: 380px; 
             text-align: center; 
-            padding: 40px 20px;
+            padding: 40px;
             background: rgba(26, 26, 32, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 30px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(10px);
-            box-sizing: border-box;
+            box-sizing: border-box; /* Asegura que el padding no desborde en móvil */
         }
 
         #login i.fa-comments {
@@ -53,14 +51,14 @@
         
         #username { 
             text-align: center; 
-            padding: 14px 20px; 
+            padding: 14px 10px; 
             border-radius: 15px; 
             border: 2px solid #2c2c34; 
             background: #0f0f12; 
             color: white; 
             outline: none; 
             transition: all 0.3s ease;
-            font-size: 16px;
+            font-size: 14px; /* Ajustado de 16px a 14px para que quepa el placeholder completo */
         }
 
         #username:focus { 
@@ -106,6 +104,7 @@
         .contact-card:hover { border-color: #007bff; background: #25252d; }
         #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
         
+        /* AJUSTE DE TAMAÑO DE LETRA EN MENSAJES */
         .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; display: flex; flex-direction: column; cursor: pointer; user-select: none; }
         .msg span { font-size: 16px; line-height: 1.4; }
         .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; }
@@ -131,6 +130,7 @@
         
         .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: flex-end; position: relative; }
         
+        /* AJUSTE DE TAMAÑO DE LETRA EN EL INPUT DE ESCRITURA */
         textarea#msg-input { flex: 1; padding: 12px 20px; border-radius: 20px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-family: inherit; font-size: 16px; max-height: 150px; min-height: 20px; overflow-y: auto; }
         
         button#main-btn { width: 45px; height: 45px; flex-shrink: 0; background: #007bff; color: white; border: none; border-radius: 50%; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
@@ -296,7 +296,7 @@
                 if (usuarioActual) {
                     db.ref("usuarios/" + usuarioActual).set("offline");
                 }
-                localStorage.removeItem('urrichat_user');
+                // NO eliminamos el localStorage aquí para que lo recuerde al volver
                 window.location.reload();
             }
         }
@@ -515,11 +515,11 @@
             }
         });
 
-        // FUNCIONALIDAD: Recordar usuario al iniciar la página
+        // FUNCIONALIDAD: Carga el nombre guardado en el input al abrir la página
         window.onload = () => {
             const savedUser = localStorage.getItem('urrichat_user');
             if (savedUser) {
-                registrarUsuario(savedUser);
+                document.getElementById('username').value = savedUser;
             }
         };
     </script>
