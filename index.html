@@ -15,7 +15,6 @@
         #username { text-align: center; }
         #contacts-container, #chat-container { display: none; flex-direction: column; width: 100%; max-width: 500px; height: 100%; background: #0f0f12; }
         
-        /* Clases para estados */
         .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; transition: background-color 0.3s, box-shadow 0.3s; }
         .dot-online { background-color: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
         .dot-offline { background-color: #ff4444; box-shadow: 0 0 8px #ff4444; }
@@ -66,6 +65,11 @@
         #file-input { display: none; }
         .btn-icon { background: none; border: none; color: #007bff; font-size: 1.2rem; cursor: pointer; padding: 5px; transition: 0.2s; }
         .btn-icon:hover { color: #fff; }
+
+        /* Estilo específico para el audio */
+        audio { height: 35px; max-width: 100%; margin-top: 5px; filter: invert(1); }
+        .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -119,6 +123,7 @@
             <input type="file" id="file-input" onchange="enviarArchivo(this)">
             <button class="btn-icon" onclick="toggleEmojiPicker()"><i class="far fa-smile"></i></button>
             <button class="btn-icon" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip"></i></button>
+            <button class="btn-icon" id="mic-btn" onclick="toggleAudio()"><i class="fas fa-microphone"></i></button>
             <input type="text" id="msg-input" placeholder="Escribe tu mensaje..." onkeypress="if(event.key==='Enter') enviar()">
             <button id="main-btn" onclick="enviar()" style="width: 45px; height: 45px; border-radius: 50%; padding: 0;">
                 <i class="fas fa-paper-plane"></i>
@@ -142,6 +147,11 @@
         let usuarioActual = "";
         let salaActual = "";
 
+        // Variables para Audio
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
         if ("Notification" in window && Notification.permission !== "denied") {
             Notification.requestPermission();
         }
@@ -150,20 +160,15 @@
             let inputName = nombrePersistente || document.getElementById('username').value.trim();
             if (inputName) {
                 usuarioActual = inputName;
-                
-                // Guardamos el nombre en el navegador
                 localStorage.setItem('urrichat_user', usuarioActual);
-
                 const userRef = db.ref("usuarios/" + usuarioActual);
                 const connectedRef = db.ref(".info/connected");
-
                 connectedRef.on("value", (snap) => {
                     if (snap.val() === true) {
                         userRef.onDisconnect().set("offline");
                         userRef.set("online");
                     }
                 });
-
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('contacts-container').style.display = 'flex';
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
@@ -176,7 +181,6 @@
             if (nuevoNombre && nuevoNombre !== usuarioActual) {
                 db.ref("usuarios/" + usuarioActual).set("offline"); 
                 usuarioActual = nuevoNombre;
-                // Actualizamos también la memoria del navegador
                 localStorage.setItem('urrichat_user', usuarioActual);
                 db.ref("usuarios/" + usuarioActual).set("online");
                 db.ref("usuarios/" + usuarioActual).onDisconnect().set("offline");
@@ -191,7 +195,6 @@
                 snapshot.forEach((child) => {
                     const nombre = child.key;
                     const estado = child.val(); 
-                    
                     if (nombre !== usuarioActual) {
                         const card = document.createElement("div");
                         card.className = "contact-card";
@@ -266,6 +269,43 @@
             input.value = "";
         }
 
+        // FUNCIONES DE AUDIO AÑADIDAS
+        async function toggleAudio() {
+            const micBtn = document.getElementById('mic-btn');
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const ahora = new Date();
+                            const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
+                            db.ref(salaActual).push({ 
+                                u: usuarioActual, 
+                                h: horaStr, 
+                                file: e.target.result, 
+                                fileType: 'audio/webm', 
+                                r: false 
+                            });
+                        };
+                        reader.readAsDataURL(audioBlob);
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.classList.add('recording');
+                } catch (err) { alert("No se pudo acceder al micrófono"); }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                micBtn.classList.remove('recording');
+            }
+        }
+
         function vaciarChat() {
             if(confirm("¿Borrar historial?")) db.ref(salaActual).remove();
         }
@@ -274,7 +314,6 @@
             db.ref(salaActual).on("value", (snapshot) => {
                 const box = document.getElementById("messages");
                 box.innerHTML = "";
-                
                 snapshot.forEach((child) => {
                     const data = child.val();
                     const msgId = child.key;
@@ -283,10 +322,8 @@
                     if (!esMio && data.r === false) {
                         if (document.visibilityState === 'visible') {
                             db.ref(`${salaActual}/${msgId}/r`).set(true);
-                        } else {
-                            if (Notification.permission === "granted") {
-                                new Notification("UrriChat: Nuevo mensaje", { body: `${data.u}: ${data.t || 'Archivo'}` });
-                            }
+                        } else if (Notification.permission === "granted") {
+                            new Notification("UrriChat: Nuevo mensaje", { body: `${data.u}: ${data.t || 'Archivo/Voz'}` });
                         }
                     }
 
@@ -299,6 +336,8 @@
                     if(data.file) {
                         if(data.fileType.startsWith("image/")) {
                             contenido += `<img src="${data.file}" class="attachment" onclick="window.open(this.src)">`;
+                        } else if(data.fileType.startsWith("audio/")) {
+                            contenido += `<audio controls src="${data.file}"></audio>`;
                         } else {
                             contenido += `<a href="${data.file}" download="${data.fileName}" class="file-link"><i class="fas fa-file-download"></i> ${data.fileName}</a>`;
                         }
@@ -313,11 +352,10 @@
                     }
 
                     const checkClass = data.r ? "read" : "";
-                    contenido += `
-                        <div class="status-info">
-                            <span class="timestamp">${data.h || '--:--'}</span>
-                            ${esMio ? `<i class="fas fa-check-double check-icon ${checkClass}"></i>` : ''}
-                        </div>`;
+                    contenido += `<div class="status-info">
+                        <span class="timestamp">${data.h || '--:--'}</span>
+                        ${esMio ? `<i class="fas fa-check-double check-icon ${checkClass}"></i>` : ''}
+                    </div>`;
                     
                     msgDiv.innerHTML = contenido;
                     box.appendChild(msgDiv);
@@ -338,12 +376,9 @@
             }
         });
 
-        // AUTO-LOGIN AL CARGAR LA PÁGINA
         window.onload = () => {
             const savedUser = localStorage.getItem('urrichat_user');
-            if (savedUser) {
-                registrarUsuario(savedUser);
-            }
+            if (savedUser) registrarUsuario(savedUser);
         };
     </script>
 </body>
