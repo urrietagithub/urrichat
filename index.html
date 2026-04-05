@@ -17,11 +17,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         /* --- ESTILOS BASE --- */
+        * { box-sizing: border-box; } /* Asegura que los botones no se salgan */
         html, body { 
             height: 100%; 
             margin: 0; 
             padding: 0; 
-            overflow: hidden; 
+            overflow-y: auto; /* Permite actualizar con scroll hacia abajo */
             background: radial-gradient(circle at center, #1a1a20 0%, #0f0f12 100%);
             color: white;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -62,7 +63,6 @@
 
         #username { 
             width: 100%;
-            box-sizing: border-box;
             text-align: center; 
             padding: 14px 20px; 
             border-radius: 15px; 
@@ -116,15 +116,16 @@
         .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; }
         .msg.other { align-self: flex-start; background: #2c2c34; border-bottom-left-radius: 2px; }
 
-        /* --- FOOTER AJUSTADO --- */
+        /* --- FOOTER AJUSTADO (Sin márgenes que corten botones) --- */
         .input-area { 
-            padding: 10px;
+            padding: 10px 15px;
             padding-bottom: calc(10px + env(safe-area-inset-bottom)); 
             background: #1a1a20; 
             display: flex; 
-            gap: 10px; 
+            gap: 12px; 
             align-items: center; 
             border-top: 1px solid #333;
+            width: 100%;
         }
 
         textarea#msg-input { 
@@ -150,12 +151,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 5px;
         }
 
         button#main-btn { 
-            width: 42px; 
-            height: 42px; 
+            width: 45px; 
+            height: 45px; 
             background: #007bff; 
             color: white; 
             border: none; 
@@ -325,7 +325,7 @@
                         const salaID = "privado_" + [usuarioActual, child.key].sort().join("_");
                         const card = document.createElement("div");
                         card.className = "contact-card";
-                        card.innerHTML = `<span>${child.key}</span><div style="display:flex;align-items:center"><span id="badge-${salaID}"></span><span class="online-dot ${child.val()==='online'?'dot-online':'dot-offline'}"></span></div>`;
+                        card.innerHTML = `<span><i class="fas fa-user" style="margin-right:10px; opacity:0.5"></i>${child.key}</span><div style="display:flex;align-items:center"><span id="badge-${salaID}"></span><span class="online-dot ${child.val()==='online'?'dot-online':'dot-offline'}"></span></div>`;
                         card.onclick = () => abrirChat(salaID, child.key);
                         list.appendChild(card);
                         verificarMensajesNuevos(salaID);
@@ -411,12 +411,16 @@
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
         function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='grid'?'none':'grid'; }
         function addEmoji(e) { document.getElementById('msg-input').value += e; cerrarSelectores(); }
-        function vaciarChat() { if(confirm("¿Vaciar?")) db.ref(salaActual).remove(); }
+        function vaciarChat() { if(confirm("¿Estás seguro de que deseas vaciar este chat? Esta acción no se puede deshacer.")) db.ref(salaActual).remove(); }
         
         function confirmarSalida() {
             if (confirm("¿Estás seguro que deseas cerrar sesión?")) {
-                localStorage.clear();
-                location.reload();
+                db.ref("usuarios/" + usuarioActual).set("offline");
+                document.getElementById('contacts-container').style.display = 'none';
+                document.getElementById('chat-container').style.display = 'none';
+                document.getElementById('login').style.display = 'flex';
+                // Mantiene el usuario en el campo pero limpia la variable activa
+                usuarioActual = "";
             }
         }
 
@@ -431,7 +435,13 @@
             }
         }
         
-        window.onload = () => { if(localStorage.getItem('urrichat_user')) registrarUsuario(localStorage.getItem('urrichat_user')); };
+        window.onload = () => { 
+            const saved = localStorage.getItem('urrichat_user');
+            if(saved) {
+                document.getElementById('username').value = saved;
+                registrarUsuario(saved);
+            }
+        };
     </script>
 </body>
 </html>
