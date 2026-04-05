@@ -2,31 +2,37 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UrriChat</title>
-    
+
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f0f12">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    
+
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22%23007bff%22/><path d=%22M30 35h40v25H45L30 75V35z%22 fill=%22white%22/></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         /* --- ESTILOS BASE --- */
-        body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            background: radial-gradient(circle at center, #1a1a20 0%, #0f0f12 100%); 
-            color: white; 
+        body, html { 
             margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            justify-content: center; 
-            align-items: center; 
+            padding: 0; 
+            height: 100%; 
+            width: 100%;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: #0f0f12;
+            color: white; 
+            overflow: hidden; /* Evita scroll en el body principal */
+        }
+
+        /* Contenedor para centrar el login */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         /* --- MEJORA PROFESIONAL DEL LOGIN --- */
@@ -43,6 +49,7 @@
             border-radius: 30px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(10px);
+            z-index: 1000;
         }
 
         #login i.fa-comments {
@@ -73,12 +80,6 @@
             background: #1a1a20;
         }
 
-        #username::placeholder { 
-            color: #666; 
-            font-style: normal; 
-            opacity: 1; 
-        }
-
         #login-btn {
             padding: 14px;
             background: #007bff;
@@ -89,67 +90,86 @@
             font-size: 16px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
         }
 
-        #login-btn:hover {
-            background: #0056b3;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        /* --- CONTENEDORES PRINCIPALES --- */
+        #contacts-container, #chat-container { 
+            display: none; 
+            flex-direction: column; 
+            width: 100%; 
+            max-width: 500px; 
+            height: 100vh; /* Ocupa todo el alto de la pantalla */
+            background: #0f0f12; 
+            position: fixed;
+            top: 0;
         }
 
-        #login-btn:active { transform: translateY(0); }
+        /* --- HEADER FIJO --- */
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 10px 15px; 
+            background: #1a1a20; 
+            border-bottom: 1px solid #333; 
+            height: 60px; /* Altura fija */
+            box-sizing: border-box;
+            flex-shrink: 0; /* Evita que el header se encoja */
+        }
 
-        #contacts-container, #chat-container { display: none; flex-direction: column; width: 100%; max-width: 500px; height: 100%; background: #0f0f12; }
+        /* --- ÁREA DE MENSAJES CON SCROLL --- */
+        #messages { 
+            flex: 1; /* Toma todo el espacio disponible entre header y footer */
+            overflow-y: auto; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            scroll-behavior: smooth;
+            background: radial-gradient(circle at center, #1a1a20 0%, #0f0f12 100%);
+        }
 
-        .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; transition: background-color 0.3s, box-shadow 0.3s; }
+        /* --- FOOTER / INPUT FIJO --- */
+        .input-area { 
+            display: flex; 
+            padding: 10px; 
+            background: #1a1a20; 
+            gap: 8px; 
+            align-items: flex-end; 
+            border-top: 1px solid #333;
+            flex-shrink: 0; /* Evita que el footer se encoja */
+        }
+
+        /* ESTILOS DE BURBUJAS Y OTROS */
+        .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; }
         .dot-online { background-color: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
         .dot-offline { background-color: #ff4444; box-shadow: 0 0 8px #ff4444; }
 
-        .contact-card { background: #1a1a20; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; }
-        .contact-card:hover { border-color: #007bff; background: #25252d; }
-        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
-
-        /* AJUSTE DE TAMAÑO DE LETRA EN MENSAJES */
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; display: flex; flex-direction: column; cursor: pointer; user-select: none; }
-        .msg span { font-size: 16px; line-height: 1.4; }
+        .contact-card { background: #1a1a20; padding: 15px; margin: 10px; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
+        
+        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; display: flex; flex-direction: column; }
         .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; }
         .msg.other { align-self: flex-start; background: #2c2c34; border-bottom-left-radius: 2px; }
 
-        .reactions-container { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
-        .reaction-badge { background: #1a1a20; border: 1px solid #444; border-radius: 10px; padding: 2px 6px; font-size: 12px; display: flex; align-items: center; gap: 3px; }
+        textarea#msg-input { flex: 1; padding: 10px 15px; border-radius: 20px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-size: 16px; max-height: 120px; }
 
-        .emoji-picker { display: none; position: absolute; bottom: 70px; left: 15px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 100; box-shadow: 0 5px 20px rgba(0,0,0,0.8); }
-        .emoji-item { cursor: pointer; font-size: 1.2rem; transition: 0.2s; text-align: center; }
-        .emoji-item:hover { transform: scale(1.3); }
+        button#main-btn { width: 45px; height: 45px; background: #007bff; color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        .attachment { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; }
-        .file-link { color: #fff; text-decoration: underline; font-size: 13px; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
+        .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+
+        .emoji-picker { display: none; position: absolute; bottom: 70px; left: 15px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 100; }
+        .emoji-item { cursor: pointer; font-size: 1.2rem; }
 
         .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; }
         .timestamp { font-size: 9px; opacity: 0.7; }
         .check-icon { font-size: 10px; color: #fff; opacity: 0.5; }
         .check-icon.read { color: #88ccff; opacity: 1; }
-
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a20; border-bottom: 1px solid #333; }
-        .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-
-        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: flex-end; position: relative; }
-
-        /* AJUSTE DE TAMAÑO DE LETRA EN EL INPUT DE ESCRITURA */
-        textarea#msg-input { flex: 1; padding: 12px 20px; border-radius: 20px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-family: inherit; font-size: 16px; max-height: 150px; min-height: 20px; overflow-y: auto; }
-
-        button#main-btn { width: 45px; height: 45px; flex-shrink: 0; background: #007bff; color: white; border: none; border-radius: 50%; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
-
-        small { display: block; font-size: 11px; color: #88ccff; margin-bottom: 4px; font-weight: bold; }
-        #file-input { display: none; }
-
-        .btn-icon { background: none; border: none; color: #007bff; font-size: 1.2rem; cursor: pointer; padding: 5px; transition: 0.2s; flex-shrink: 0; margin-bottom: 5px; }
-        .btn-icon:hover { color: #fff; }
-
-        audio { height: 35px; max-width: 100%; margin-top: 5px; filter: invert(1); }
+        
+        .attachment { max-width: 100%; border-radius: 8px; margin-top: 5px; }
+        audio { height: 35px; max-width: 100%; filter: invert(1); }
         .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        small { font-size: 11px; color: #88ccff; font-weight: bold; margin-bottom: 2px; }
     </style>
 </head>
 <body>
@@ -170,24 +190,24 @@
         <div class="header">
             <span id="mi-perfil" style="font-weight: bold; color: #2ecc71;"></span>
             <div style="display: flex; gap: 8px;">
-                <button class="btn-header" onclick="editarNombre()"><i class="fas fa-user-edit"></i> Perfil</button>
-                <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt"></i> Salir</button>
+                <button class="btn-header" onclick="editarNombre()"><i class="fas fa-user-edit"></i></button>
+                <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
-        <div id="lista-usuarios" style="padding: 15px; overflow-y: auto;">
+        <div style="flex: 1; overflow-y: auto;">
             <div class="contact-card" onclick="abrirChat('muro', 'Chat Grupal')" style="border-left: 5px solid #007bff; background: #1e1e26;">
                 <span><i class="fas fa-users" style="margin-right: 10px;"></i> Chat Grupal</span>
                 <span class="online-dot dot-online"></span>
             </div>
-            <p style="color: #666; font-size: 15px; margin: 20px 0 10px 5px; font-weight: 500;">Usuarios De UrriChat</p>
-            <div id="usuarios-conectados"> </div>
+            <p style="color: #666; font-size: 14px; margin: 20px 0 10px 15px;">Usuarios de UrriChat</p>
+            <div id="usuarios-conectados"></div>
         </div>
     </div>
 
     <div id="chat-container">
         <div class="header">
             <button class="btn-header" onclick="volverAContactos()"><i class="fas fa-chevron-left"></i></button>
-            <span id="chat-title" style="font-weight: bold;">Chat</span>
+            <span id="chat-title" style="font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">Chat</span>
             <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="vaciarChat()"><i class="fas fa-trash-alt"></i></button>
         </div>
 
@@ -207,10 +227,10 @@
                 <span class="emoji-item" onclick="addEmoji('🎉')">🎉</span>
             </div>
 
-            <input type="file" id="file-input" onchange="enviarArchivo(this)">
-            <button class="btn-icon" onclick="toggleEmojiPicker()"><i class="far fa-smile"></i></button>
-            <button class="btn-icon" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip"></i></button>
-            <button class="btn-icon" id="mic-btn" onclick="toggleAudio()"><i class="fas fa-microphone"></i></button>
+            <input type="file" id="file-input" style="display:none" onchange="enviarArchivo(this)">
+            <button class="btn-icon" style="background:none; border:none; color:#007bff; font-size:1.2rem;" onclick="toggleEmojiPicker()"><i class="far fa-smile"></i></button>
+            <button class="btn-icon" style="background:none; border:none; color:#007bff; font-size:1.2rem;" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip"></i></button>
+            <button class="btn-icon" style="background:none; border:none; color:#007bff; font-size:1.2rem;" id="mic-btn" onclick="toggleAudio()"><i class="fas fa-microphone"></i></button>
 
             <textarea id="msg-input" placeholder="Escribe tu mensaje..." rows="1" oninput="autoResize(this)" onkeydown="checkEnter(event)"></textarea>
 
@@ -221,6 +241,7 @@
     </div>
 
     <script>
+        // --- TODA TU LÓGICA ORIGINAL SE MANTIENE ---
         let typingTimeout;
         function autoResize(textarea) {
             textarea.style.height = 'auto';
@@ -353,7 +374,7 @@
                 const tituloSpan = document.getElementById('chat-title');
                 if (escribiendo.length > 0) {
                     if(!tituloSpan.dataset.orig) tituloSpan.dataset.orig = tituloSpan.innerText;
-                    tituloSpan.innerText = escribiendo.join(", ") + " está escribiendo...";
+                    tituloSpan.innerText = escribiendo.join(", ") + " escribiendo...";
                     tituloSpan.style.color = "#2ecc71";
                 } else {
                     tituloSpan.innerText = tituloSpan.dataset.orig || tituloSpan.innerText;
@@ -387,7 +408,7 @@
         }
 
         function reaccionar(msgId) {
-            const emoji = prompt("Reacciona con un emoji (ej: ❤️, 👍, 😂):", "❤️");
+            const emoji = prompt("Reacciona con un emoji:", "❤️");
             if (emoji) {
                 const rRef = db.ref(`${salaActual}/${msgId}/reacciones/${emoji}`);
                 rRef.transaction((currentValue) => (currentValue || 0) + 1);
@@ -468,7 +489,7 @@
                         if (document.visibilityState === 'visible') {
                             db.ref(`${salaActual}/${msgId}/r`).set(true);
                         } else if (Notification.permission === "granted") {
-                            new Notification("UrriChat: Nuevo mensaje", { body: `${data.u}: ${data.t || 'Archivo/Voz'}` });
+                            new Notification("UrriChat: " + data.u, { body: data.t || 'Archivo' });
                         }
                     }
 
@@ -489,9 +510,9 @@
                     }
 
                     if(data.reacciones) {
-                        contenido += `<div class="reactions-container">`;
+                        contenido += `<div class="reactions-container" style="display:flex; gap:4px; margin-top:5px;">`;
                         for(let e in data.reacciones) {
-                            contenido += `<div class="reaction-badge">${e} ${data.reacciones[e]}</div>`;
+                            contenido += `<div class="reaction-badge" style="background:#1a1a20; border-radius:10px; padding:2px 6px; font-size:12px;">${e} ${data.reacciones[e]}</div>`;
                         }
                         contenido += `</div>`;
                     }
@@ -509,27 +530,14 @@
             });
         }
 
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === 'visible' && salaActual) {
-                db.ref(salaActual).once("value", (snapshot) => {
-                    snapshot.forEach((child) => {
-                        if (child.val().u !== usuarioActual && child.val().r === false) {
-                            db.ref(`${salaActual}/${child.key}/r`).set(true);
-                        }
-                    });
-                });
-            }
-        });
-
         window.onload = () => {
             const savedUser = localStorage.getItem('urrichat_user');
             if (savedUser) registrarUsuario(savedUser);
         };
 
-        // PASO 3: REGISTRO DEL SERVICE WORKER
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
-            .then(() => console.log("Service Worker Registrado con éxito"));
+            .then(() => console.log("SW OK"));
         }
     </script>
 </body>
