@@ -20,23 +20,22 @@
             height: 100vh; 
             justify-content: center; 
             align-items: center; 
-            overflow: hidden; /* Evita scrolls raros en el login */
         }
 
-        /* --- LOGIN AJUSTADO PARA MÓVILES (MÁS DESPEGADO DE LOS LADOS) --- */
+        /* --- MEJORA PROFESIONAL DEL LOGIN --- */
         #login { 
             display: flex; 
             flex-direction: column; 
             gap: 25px; 
-            width: 80%; 
-            max-width: 340px; 
+            width: 85%; 
+            max-width: 380px; 
             text-align: center; 
-            padding: 40px 25px;
-            background: rgba(30, 30, 38, 0.98); 
-            border: 1px solid rgba(255, 255, 255, 0.15); 
-            border-radius: 35px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(20px);
+            padding: 40px;
+            background: rgba(26, 26, 32, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
         }
 
         #login i.fa-comments {
@@ -48,7 +47,7 @@
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
-
+        
         #username { 
             text-align: center; 
             padding: 14px 20px; 
@@ -59,14 +58,18 @@
             outline: none; 
             transition: all 0.3s ease;
             font-size: 16px;
-            width: calc(100% - 44px); /* Ajuste para el padding interno */
-            margin: 0 auto;
         }
 
         #username:focus { 
             border-color: #007bff; 
             box-shadow: 0 0 15px rgba(0, 123, 255, 0.3); 
             background: #1a1a20;
+        }
+
+        #username::placeholder { 
+            color: #666; 
+            font-style: normal; 
+            opacity: 1; 
         }
 
         #login-btn {
@@ -80,34 +83,77 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
-            width: 100%;
         }
 
-        /* Mantengo el resto de tus estilos intactos */
+        #login-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        #login-btn:active { transform: translateY(0); }
+
         #contacts-container, #chat-container { display: none; flex-direction: column; width: 100%; max-width: 500px; height: 100%; background: #0f0f12; }
-        .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; }
+        
+        .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; transition: background-color 0.3s, box-shadow 0.3s; }
         .dot-online { background-color: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
         .dot-offline { background-color: #ff4444; box-shadow: 0 0 8px #ff4444; }
-        .contact-card { background: #1a1a20; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
-        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; display: flex; flex-direction: column; }
-        .msg.me { align-self: flex-end; background: #007bff; }
-        .msg.other { align-self: flex-start; background: #2c2c34; }
+
+        .contact-card { background: #1a1a20; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; }
+        .contact-card:hover { border-color: #007bff; background: #25252d; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        
+        /* AJUSTE DE TAMAÑO DE LETRA EN MENSAJES */
+        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; display: flex; flex-direction: column; cursor: pointer; user-select: none; }
+        .msg span { font-size: 16px; line-height: 1.4; }
+        .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; }
+        .msg.other { align-self: flex-start; background: #2c2c34; border-bottom-left-radius: 2px; }
+        
+        .reactions-container { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+        .reaction-badge { background: #1a1a20; border: 1px solid #444; border-radius: 10px; padding: 2px 6px; font-size: 12px; display: flex; align-items: center; gap: 3px; }
+
+        .emoji-picker { display: none; position: absolute; bottom: 70px; left: 15px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 100; box-shadow: 0 5px 20px rgba(0,0,0,0.8); }
+        .emoji-item { cursor: pointer; font-size: 1.2rem; transition: 0.2s; text-align: center; }
+        .emoji-item:hover { transform: scale(1.3); }
+
+        .attachment { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; }
+        .file-link { color: #fff; text-decoration: underline; font-size: 13px; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
+        
+        .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; }
+        .timestamp { font-size: 9px; opacity: 0.7; }
+        .check-icon { font-size: 10px; color: #fff; opacity: 0.5; }
+        .check-icon.read { color: #88ccff; opacity: 1; }
+
         .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a20; border-bottom: 1px solid #333; }
-        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: flex-end; }
-        textarea#msg-input { flex: 1; padding: 12px 20px; border-radius: 20px; border: none; background: #2c2c34; color: white; font-size: 16px; }
-        button#main-btn { width: 45px; height: 45px; background: #007bff; color: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        
+        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: flex-end; position: relative; }
+        
+        /* AJUSTE DE TAMAÑO DE LETRA EN EL INPUT DE ESCRITURA */
+        textarea#msg-input { flex: 1; padding: 12px 20px; border-radius: 20px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-family: inherit; font-size: 16px; max-height: 150px; min-height: 20px; overflow-y: auto; }
+        
+        button#main-btn { width: 45px; height: 45px; flex-shrink: 0; background: #007bff; color: white; border: none; border-radius: 50%; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
+        
+        small { display: block; font-size: 11px; color: #88ccff; margin-bottom: 4px; font-weight: bold; }
+        #file-input { display: none; }
+        
+        .btn-icon { background: none; border: none; color: #007bff; font-size: 1.2rem; cursor: pointer; padding: 5px; transition: 0.2s; flex-shrink: 0; margin-bottom: 5px; }
+        .btn-icon:hover { color: #fff; }
+
+        audio { height: 35px; max-width: 100%; margin-top: 5px; filter: invert(1); }
+        .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
     <div id="login">
         <div>
-            <i class="fas fa-comments" style="font-size: 4rem; color: #007bff; margin-bottom: 10px;"></i>
-            <h1 style="color: #007bff; font-size: 2.5rem; margin: 0; letter-spacing: -1px;">UrriChat</h1>
-            <p style="color: #888; margin-top: 5px; font-size: 0.9rem;">Tu chat favorito</p>
+            <i class="fas fa-comments" style="font-size: 4.5rem; color: #007bff; margin-bottom: 10px;"></i>
+            <h1 style="color: #007bff; font-size: 2.8rem; margin: 0; letter-spacing: -1px;">UrriChat</h1>
+            <p style="color: #888; margin-top: 5px; font-size: 1rem;">Tu chat favorito</p>
         </div>
-        <input type="text" id="username" placeholder="Nombre de usuario...">
+        <input type="text" id="username" placeholder="Introduce tu nombre de usuario...">
         <button id="login-btn" onclick="registrarUsuario()">
             Conectar <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
         </button>
@@ -117,34 +163,78 @@
         <div class="header">
             <span id="mi-perfil" style="font-weight: bold; color: #2ecc71;"></span>
             <div style="display: flex; gap: 8px;">
-                <button onclick="editarNombre()" style="background:transparent; border:1px solid #007bff; color:#007bff; border-radius:8px; padding:5px 10px;">Perfil</button>
-                <button onclick="cerrarSesion()" style="background:transparent; border:1px solid #ff4444; color:#ff4444; border-radius:8px; padding:5px 10px;">Salir</button>
+                <button class="btn-header" onclick="editarNombre()"><i class="fas fa-user-edit"></i> Perfil</button>
+                <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt"></i> Salir</button>
             </div>
         </div>
-        <div id="lista-usuarios" style="padding: 15px;">
+        <div id="lista-usuarios" style="padding: 15px; overflow-y: auto;">
             <div class="contact-card" onclick="abrirChat('muro', 'Chat Grupal')" style="border-left: 5px solid #007bff; background: #1e1e26;">
-                <span><i class="fas fa-users"></i> Chat Grupal</span>
+                <span><i class="fas fa-users" style="margin-right: 10px;"></i> Chat Grupal</span>
                 <span class="online-dot dot-online"></span>
             </div>
+            <p style="color: #666; font-size: 15px; margin: 20px 0 10px 5px; font-weight: 500;">Usuarios De UrriChat</p>
             <div id="usuarios-conectados"> </div>
         </div>
     </div>
 
     <div id="chat-container">
         <div class="header">
-            <button onclick="volverAContactos()" style="background:transparent; border:none; color:#007bff; font-size:1.2rem;"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn-header" onclick="volverAContactos()"><i class="fas fa-chevron-left"></i></button>
             <span id="chat-title" style="font-weight: bold;">Chat</span>
-            <div></div>
+            <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="vaciarChat()"><i class="fas fa-trash-alt"></i></button>
         </div>
+        
         <div id="messages"></div>
+
         <div class="input-area">
-            <textarea id="msg-input" placeholder="Escribe algo..." rows="1" onkeydown="checkEnter(event)"></textarea>
-            <button id="main-btn" onclick="enviar()"><i class="fas fa-paper-plane"></i></button>
+            <div id="emoji-picker" class="emoji-picker">
+                <span class="emoji-item" onclick="addEmoji('😊')">😊</span>
+                <span class="emoji-item" onclick="addEmoji('😂')">😂</span>
+                <span class="emoji-item" onclick="addEmoji('❤️')">❤️</span>
+                <span class="emoji-item" onclick="addEmoji('👍')">👍</span>
+                <span class="emoji-item" onclick="addEmoji('🔥')">🔥</span>
+                <span class="emoji-item" onclick="addEmoji('😮')">😮</span>
+                <span class="emoji-item" onclick="addEmoji('😢')">😢</span>
+                <span class="emoji-item" onclick="addEmoji('👏')">👏</span>
+                <span class="emoji-item" onclick="addEmoji('😎')">😎</span>
+                <span class="emoji-item" onclick="addEmoji('🎉')">🎉</span>
+            </div>
+
+            <input type="file" id="file-input" onchange="enviarArchivo(this)">
+            <button class="btn-icon" onclick="toggleEmojiPicker()"><i class="far fa-smile"></i></button>
+            <button class="btn-icon" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip"></i></button>
+            <button class="btn-icon" id="mic-btn" onclick="toggleAudio()"><i class="fas fa-microphone"></i></button>
+            
+            <textarea id="msg-input" placeholder="Escribe tu mensaje..." rows="1" oninput="autoResize(this)" onkeydown="checkEnter(event)"></textarea>
+            
+            <button id="main-btn" onclick="enviar()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
         </div>
     </div>
 
     <script>
-        // Tu lógica de Firebase original aquí...
+        let typingTimeout;
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+            
+            if (salaActual && usuarioActual) {
+                db.ref("typing/" + salaActual + "/" + usuarioActual).set(true);
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    db.ref("typing/" + salaActual + "/" + usuarioActual).set(false);
+                }, 2000);
+            }
+        }
+
+        function checkEnter(event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                enviar();
+            }
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -160,17 +250,53 @@
         let usuarioActual = "";
         let salaActual = "";
 
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        if ("Notification" in window && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+
         function registrarUsuario(nombrePersistente) {
             let inputName = nombrePersistente || document.getElementById('username').value.trim();
             if (inputName) {
                 usuarioActual = inputName;
                 localStorage.setItem('urrichat_user', usuarioActual);
-                db.ref("usuarios/" + usuarioActual).set("online");
-                db.ref("usuarios/" + usuarioActual).onDisconnect().set("offline");
+                const userRef = db.ref("usuarios/" + usuarioActual);
+                const connectedRef = db.ref(".info/connected");
+                connectedRef.on("value", (snap) => {
+                    if (snap.val() === true) {
+                        userRef.onDisconnect().set("offline");
+                        userRef.set("online");
+                    }
+                });
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('contacts-container').style.display = 'flex';
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
                 escucharUsuarios();
+            }
+        }
+
+        function editarNombre() {
+            let nuevoNombre = prompt("Nuevo nombre:", usuarioActual);
+            if (nuevoNombre && nuevoNombre !== usuarioActual) {
+                db.ref("usuarios/" + usuarioActual).set("offline"); 
+                usuarioActual = nuevoNombre;
+                localStorage.setItem('urrichat_user', usuarioActual);
+                db.ref("usuarios/" + usuarioActual).set("online");
+                db.ref("usuarios/" + usuarioActual).onDisconnect().set("offline");
+                document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
+            }
+        }
+
+        function cerrarSesion() {
+            if (confirm("¿Cerrar sesión actual?")) {
+                if (usuarioActual) {
+                    db.ref("usuarios/" + usuarioActual).set("offline");
+                }
+                localStorage.removeItem('urrichat_user');
+                window.location.reload();
             }
         }
 
@@ -185,8 +311,9 @@
                         const card = document.createElement("div");
                         card.className = "contact-card";
                         const statusClass = (estado === "online") ? "dot-online" : "dot-offline";
-                        card.innerHTML = `<span>${nombre}</span><span class="online-dot ${statusClass}"></span>`;
-                        card.onclick = () => abrirChat("privado_" + [usuarioActual, nombre].sort().join("_"), nombre);
+                        card.innerHTML = `<span><i class="fas fa-user-circle user-icon" style="margin-right: 10px;"></i>${nombre}</span><span class="online-dot ${statusClass}"></span>`;
+                        const salaID = "privado_" + [usuarioActual, nombre].sort().join("_");
+                        card.onclick = () => abrirChat(salaID, nombre);
                         listaDiv.appendChild(card);
                     }
                 });
@@ -194,26 +321,131 @@
         }
 
         function abrirChat(id, titulo) {
+            if(salaActual) {
+                db.ref(salaActual).off();
+                db.ref("typing/" + salaActual).off();
+            }
             salaActual = id;
             document.getElementById('contacts-container').style.display = 'none';
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = titulo;
+            document.getElementById('messages').innerHTML = "";
             escucharMensajes();
+            escucharEscribiendo();
+        }
+
+        function escucharEscribiendo() {
+            db.ref("typing/" + salaActual).on("value", (snap) => {
+                const typingData = snap.val();
+                let escribiendo = [];
+                for (let user in typingData) {
+                    if (typingData[user] === true && user !== usuarioActual) {
+                        escribiendo.push(user);
+                    }
+                }
+                const tituloSpan = document.getElementById('chat-title');
+                if (escribiendo.length > 0) {
+                    if(!tituloSpan.dataset.orig) tituloSpan.dataset.orig = tituloSpan.innerText;
+                    tituloSpan.innerText = escribiendo.join(", ") + " está escribiendo...";
+                    tituloSpan.style.color = "#2ecc71";
+                } else {
+                    tituloSpan.innerText = tituloSpan.dataset.orig || tituloSpan.innerText;
+                    tituloSpan.style.color = "white";
+                }
+            });
         }
 
         function volverAContactos() {
+            if(salaActual) {
+                db.ref(salaActual).off();
+                db.ref("typing/" + salaActual).off();
+                db.ref("typing/" + salaActual + "/" + usuarioActual).set(false);
+            }
+            salaActual = ""; 
             document.getElementById('chat-container').style.display = 'none';
             document.getElementById('contacts-container').style.display = 'flex';
         }
 
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emoji-picker');
+            picker.style.display = (picker.style.display === 'grid') ? 'none' : 'grid';
+        }
+
+        function addEmoji(emoji) {
+            const input = document.getElementById('msg-input');
+            input.value += emoji;
+            autoResize(input); 
+            toggleEmojiPicker();
+            input.focus();
+        }
+
+        function reaccionar(msgId) {
+            const emoji = prompt("Reacciona con un emoji (ej: ❤️, 👍, 😂):", "❤️");
+            if (emoji) {
+                const rRef = db.ref(`${salaActual}/${msgId}/reacciones/${emoji}`);
+                rRef.transaction((currentValue) => (currentValue || 0) + 1);
+            }
+        }
+
         function enviar() {
             const input = document.getElementById('msg-input');
-            if (input.value.trim() && salaActual) {
+            const texto = input.value.trim();
+            if (texto && salaActual) {
                 const ahora = new Date();
                 const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
-                db.ref(salaActual).push({ u: usuarioActual, t: input.value, h: horaStr });
+                db.ref(salaActual).push({ u: usuarioActual, t: texto, h: horaStr, r: false });
+                db.ref("typing/" + salaActual + "/" + usuarioActual).set(false);
                 input.value = "";
+                input.style.height = 'auto'; 
+                input.focus();
             }
+        }
+
+        function enviarArchivo(input) {
+            const file = input.files[0];
+            if (!file || !salaActual) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const ahora = new Date();
+                const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
+                db.ref(salaActual).push({ u: usuarioActual, h: horaStr, file: e.target.result, fileName: file.name, fileType: file.type, r: false });
+            };
+            reader.readAsDataURL(file);
+            input.value = "";
+        }
+
+        async function toggleAudio() {
+            const micBtn = document.getElementById('mic-btn');
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const ahora = new Date();
+                            const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
+                            db.ref(salaActual).push({ u: usuarioActual, h: horaStr, file: e.target.result, fileType: 'audio/webm', r: false });
+                        };
+                        reader.readAsDataURL(audioBlob);
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.classList.add('recording');
+                } catch (err) { alert("No se pudo acceder al micrófono"); }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                micBtn.classList.remove('recording');
+            }
+        }
+
+        function vaciarChat() {
+            if(confirm("¿Borrar historial?")) db.ref(salaActual).remove();
         }
 
         function escucharMensajes() {
@@ -222,18 +454,70 @@
                 box.innerHTML = "";
                 snapshot.forEach((child) => {
                     const data = child.val();
+                    const msgId = child.key;
                     const esMio = data.u === usuarioActual;
+
+                    if (!esMio && data.r === false) {
+                        if (document.visibilityState === 'visible') {
+                            db.ref(`${salaActual}/${msgId}/r`).set(true);
+                        } else if (Notification.permission === "granted") {
+                            new Notification("UrriChat: Nuevo mensaje", { body: `${data.u}: ${data.t || 'Archivo/Voz'}` });
+                        }
+                    }
+
                     const msgDiv = document.createElement("div");
                     msgDiv.className = `msg ${esMio ? 'me' : 'other'}`;
-                    msgDiv.innerHTML = `<span>${data.t}</span><small style="font-size:10px; opacity:0.6; text-align:right;">${data.h}</small>`;
+                    msgDiv.ondblclick = () => reaccionar(msgId);
+                    
+                    let contenido = !esMio ? `<small>${data.u}</small>` : "";
+                    if(data.t) contenido += `<span>${data.t}</span>`;
+                    if(data.file) {
+                        if(data.fileType.startsWith("image/")) {
+                            contenido += `<img src="${data.file}" class="attachment" onclick="window.open(this.src)">`;
+                        } else if(data.fileType.startsWith("audio/")) {
+                            contenido += `<audio controls src="${data.file}"></audio>`;
+                        } else {
+                            contenido += `<a href="${data.file}" download="${data.fileName}" class="file-link"><i class="fas fa-file-download"></i> ${data.fileName}</a>`;
+                        }
+                    }
+                    
+                    if(data.reacciones) {
+                        contenido += `<div class="reactions-container">`;
+                        for(let e in data.reacciones) {
+                            contenido += `<div class="reaction-badge">${e} ${data.reacciones[e]}</div>`;
+                        }
+                        contenido += `</div>`;
+                    }
+
+                    const checkClass = data.r ? "read" : "";
+                    contenido += `<div class="status-info">
+                        <span class="timestamp">${data.h || '--:--'}</span>
+                        ${esMio ? `<i class="fas fa-check-double check-icon ${checkClass}"></i>` : ''}
+                    </div>`;
+                    
+                    msgDiv.innerHTML = contenido;
                     box.appendChild(msgDiv);
                 });
                 box.scrollTop = box.scrollHeight;
             });
         }
 
-        function checkEnter(event) { if (event.key === "Enter") enviar(); }
-        window.onload = () => { if (localStorage.getItem('urrichat_user')) registrarUsuario(localStorage.getItem('urrichat_user')); };
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === 'visible' && salaActual) {
+                db.ref(salaActual).once("value", (snapshot) => {
+                    snapshot.forEach((child) => {
+                        if (child.val().u !== usuarioActual && child.val().r === false) {
+                            db.ref(`${salaActual}/${child.key}/r`).set(true);
+                        }
+                    });
+                });
+            }
+        });
+
+        window.onload = () => {
+            const savedUser = localStorage.getItem('urrichat_user');
+            if (savedUser) registrarUsuario(savedUser);
+        };
     </script>
 </body>
 </html>
