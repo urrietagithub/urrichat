@@ -27,9 +27,10 @@
             height: 100vh; 
             justify-content: center; 
             align-items: center; 
+            overflow: hidden;
         }
 
-        /* --- MEJORA PROFESIONAL DEL LOGIN --- */
+        /* --- LOGIN --- */
         #login { 
             display: flex; 
             flex-direction: column; 
@@ -73,12 +74,6 @@
             background: #1a1a20;
         }
 
-        #username::placeholder { 
-            color: #666; 
-            font-style: normal; 
-            opacity: 1; 
-        }
-
         #login-btn {
             padding: 14px;
             background: #007bff;
@@ -92,26 +87,26 @@
             box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
         }
 
-        #login-btn:hover {
-            background: #0056b3;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
-        }
-
-        #login-btn:active { transform: translateY(0); }
+        #login-btn:hover { background: #0056b3; transform: translateY(-2px); }
 
         #contacts-container, #chat-container { display: none; flex-direction: column; width: 100%; max-width: 500px; height: 100%; background: #0f0f12; }
 
-        .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; transition: background-color 0.3s, box-shadow 0.3s; }
+        /* --- CONTACTOS --- */
+        .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; }
         .dot-online { background-color: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
         .dot-offline { background-color: #ff4444; box-shadow: 0 0 8px #ff4444; }
 
-        .contact-card { background: #1a1a20; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; }
+        .contact-card { background: #1a1a20; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; position: relative; }
         .contact-card:hover { border-color: #007bff; background: #25252d; }
+        
+        .unread-badge { background: #007bff; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: bold; margin-left: 10px; }
+
+        /* --- CHAT --- */
         #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
 
-        /* AJUSTE DE TAMAÑO DE LETRA EN MENSAJES */
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; display: flex; flex-direction: column; cursor: pointer; user-select: none; }
+        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; display: flex; flex-direction: column; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         .msg span { font-size: 16px; line-height: 1.4; }
         .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; }
         .msg.other { align-self: flex-start; background: #2c2c34; border-bottom-left-radius: 2px; }
@@ -123,7 +118,8 @@
         .emoji-item { cursor: pointer; font-size: 1.2rem; transition: 0.2s; text-align: center; }
         .emoji-item:hover { transform: scale(1.3); }
 
-        .attachment { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; }
+        .attachment { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; transition: 0.3s; }
+        .attachment:hover { opacity: 0.8; }
         .file-link { color: #fff; text-decoration: underline; font-size: 13px; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
 
         .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; }
@@ -131,25 +127,27 @@
         .check-icon { font-size: 10px; color: #fff; opacity: 0.5; }
         .check-icon.read { color: #88ccff; opacity: 1; }
 
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a20; border-bottom: 1px solid #333; }
-        .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a20; border-bottom: 1px solid #333; z-index: 10; }
+        .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 14px; }
 
-        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: flex-end; position: relative; }
+        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: flex-end; position: relative; border-top: 1px solid #333; }
+        textarea#msg-input { flex: 1; padding: 12px 20px; border-radius: 20px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-family: inherit; font-size: 16px; max-height: 150px; min-height: 20px; }
 
-        /* AJUSTE DE TAMAÑO DE LETRA EN EL INPUT DE ESCRITURA */
-        textarea#msg-input { flex: 1; padding: 12px 20px; border-radius: 20px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-family: inherit; font-size: 16px; max-height: 150px; min-height: 20px; overflow-y: auto; }
-
-        button#main-btn { width: 45px; height: 45px; flex-shrink: 0; background: #007bff; color: white; border: none; border-radius: 50%; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
+        button#main-btn { width: 45px; height: 45px; flex-shrink: 0; background: #007bff; color: white; border: none; border-radius: 50%; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        button#main-btn:active { transform: scale(0.9); }
 
         small { display: block; font-size: 11px; color: #88ccff; margin-bottom: 4px; font-weight: bold; }
         #file-input { display: none; }
 
-        .btn-icon { background: none; border: none; color: #007bff; font-size: 1.2rem; cursor: pointer; padding: 5px; transition: 0.2s; flex-shrink: 0; margin-bottom: 5px; }
+        .btn-icon { background: none; border: none; color: #007bff; font-size: 1.2rem; cursor: pointer; padding: 5px; transition: 0.2s; margin-bottom: 5px; }
         .btn-icon:hover { color: #fff; }
 
         audio { height: 35px; max-width: 100%; margin-top: 5px; filter: invert(1); }
         .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Scroll down button */
+        #scroll-down { position: absolute; bottom: 85px; right: 20px; background: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); z-index: 10; border: none; }
     </style>
 </head>
 <body>
@@ -160,7 +158,7 @@
             <h1 style="color: #007bff; font-size: 2.8rem; margin: 0; letter-spacing: -1px;">UrriChat</h1>
             <p style="color: #888; margin-top: 5px; font-size: 1rem;">Tu chat favorito</p>
         </div>
-        <input type="text" id="username" placeholder="Introduce tu nombre de usuario...">
+        <input type="text" id="username" placeholder="Introduce tu nombre de usuario..." autocomplete="off">
         <button id="login-btn" onclick="registrarUsuario()">
             Conectar <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
         </button>
@@ -187,11 +185,15 @@
     <div id="chat-container">
         <div class="header">
             <button class="btn-header" onclick="volverAContactos()"><i class="fas fa-chevron-left"></i></button>
-            <span id="chat-title" style="font-weight: bold;">Chat</span>
+            <div style="flex: 1; text-align: center;">
+                <span id="chat-title" style="font-weight: bold; display: block;">Chat</span>
+                <span id="chat-subtitle" style="font-size: 10px; color: #2ecc71; display: none;">escribiendo...</span>
+            </div>
             <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="vaciarChat()"><i class="fas fa-trash-alt"></i></button>
         </div>
 
-        <div id="messages"></div>
+        <div id="messages" onscroll="handleScroll(this)"></div>
+        <button id="scroll-down" onclick="scrollToBottom()"><i class="fas fa-chevron-down"></i></button>
 
         <div class="input-area">
             <div id="emoji-picker" class="emoji-picker">
@@ -221,27 +223,7 @@
     </div>
 
     <script>
-        let typingTimeout;
-        function autoResize(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
-
-            if (salaActual && usuarioActual) {
-                db.ref("typing/" + salaActual + "/" + usuarioActual).set(true);
-                clearTimeout(typingTimeout);
-                typingTimeout = setTimeout(() => {
-                    db.ref("typing/" + salaActual + "/" + usuarioActual).set(false);
-                }, 2000);
-            }
-        }
-
-        function checkEnter(event) {
-            if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                enviar();
-            }
-        }
-
+        // CONFIGURACIÓN FIREBASE (La tuya original)
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -256,13 +238,30 @@
         const db = firebase.database();
         let usuarioActual = "";
         let salaActual = "";
-
+        let typingTimeout;
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
 
-        if ("Notification" in window && Notification.permission !== "denied") {
-            Notification.requestPermission();
+        // --- FUNCIONES MEJORADAS ---
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+            if (salaActual && usuarioActual) {
+                db.ref(`typing/${salaActual}/${usuarioActual}`).set(true);
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    db.ref(`typing/${salaActual}/${usuarioActual}`).set(false);
+                }, 1500);
+            }
+        }
+
+        function checkEnter(event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                enviar();
+            }
         }
 
         function registrarUsuario(nombrePersistente) {
@@ -271,8 +270,7 @@
                 usuarioActual = inputName;
                 localStorage.setItem('urrichat_user', usuarioActual);
                 const userRef = db.ref("usuarios/" + usuarioActual);
-                const connectedRef = db.ref(".info/connected");
-                connectedRef.on("value", (snap) => {
+                db.ref(".info/connected").on("value", (snap) => {
                     if (snap.val() === true) {
                         userRef.onDisconnect().set("offline");
                         userRef.set("online");
@@ -285,28 +283,6 @@
             }
         }
 
-        function editarNombre() {
-            let nuevoNombre = prompt("Nuevo nombre:", usuarioActual);
-            if (nuevoNombre && nuevoNombre !== usuarioActual) {
-                db.ref("usuarios/" + usuarioActual).set("offline"); 
-                usuarioActual = nuevoNombre;
-                localStorage.setItem('urrichat_user', usuarioActual);
-                db.ref("usuarios/" + usuarioActual).set("online");
-                db.ref("usuarios/" + usuarioActual).onDisconnect().set("offline");
-                document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
-            }
-        }
-
-        function cerrarSesion() {
-            if (confirm("¿Cerrar sesión actual?")) {
-                if (usuarioActual) {
-                    db.ref("usuarios/" + usuarioActual).set("offline");
-                }
-                localStorage.removeItem('urrichat_user');
-                window.location.reload();
-            }
-        }
-
         function escucharUsuarios() {
             db.ref("usuarios").on("value", (snapshot) => {
                 const listaDiv = document.getElementById("usuarios-conectados");
@@ -315,13 +291,35 @@
                     const nombre = child.key;
                     const estado = child.val(); 
                     if (nombre !== usuarioActual) {
+                        const salaID = "privado_" + [usuarioActual, nombre].sort().join("_");
                         const card = document.createElement("div");
                         card.className = "contact-card";
                         const statusClass = (estado === "online") ? "dot-online" : "dot-offline";
-                        card.innerHTML = `<span><i class="fas fa-user-circle user-icon" style="margin-right: 10px;"></i>${nombre}</span><span class="online-dot ${statusClass}"></span>`;
-                        const salaID = "privado_" + [usuarioActual, nombre].sort().join("_");
+                        
+                        card.innerHTML = `
+                            <span><i class="fas fa-user-circle" style="margin-right: 10px;"></i>${nombre}</span>
+                            <div style="display:flex; align-items:center;">
+                                <span id="badge-${salaID}"></span>
+                                <span class="online-dot ${statusClass}"></span>
+                            </div>`;
+                        
                         card.onclick = () => abrirChat(salaID, nombre);
                         listaDiv.appendChild(card);
+                        verificarMensajesNuevos(salaID);
+                    }
+                });
+            });
+        }
+
+        function verificarMensajesNuevos(salaID) {
+            db.ref(salaID).limitToLast(1).on("value", (snap) => {
+                const badge = document.getElementById(`badge-${salaID}`);
+                if (!badge || salaActual === salaID) return;
+                snap.forEach(msg => {
+                    if (msg.val().u !== usuarioActual && msg.val().r === false) {
+                        badge.innerHTML = `<span class="unread-badge">!</span>`;
+                    } else {
+                        badge.innerHTML = "";
                     }
                 });
             });
@@ -330,7 +328,7 @@
         function abrirChat(id, titulo) {
             if(salaActual) {
                 db.ref(salaActual).off();
-                db.ref("typing/" + salaActual).off();
+                db.ref(`typing/${salaActual}`).off();
             }
             salaActual = id;
             document.getElementById('contacts-container').style.display = 'none';
@@ -342,56 +340,61 @@
         }
 
         function escucharEscribiendo() {
-            db.ref("typing/" + salaActual).on("value", (snap) => {
+            db.ref(`typing/${salaActual}`).on("value", (snap) => {
                 const typingData = snap.val();
-                let escribiendo = [];
+                let escribiendo = false;
                 for (let user in typingData) {
-                    if (typingData[user] === true && user !== usuarioActual) {
-                        escribiendo.push(user);
-                    }
+                    if (typingData[user] === true && user !== usuarioActual) escribiendo = true;
                 }
-                const tituloSpan = document.getElementById('chat-title');
-                if (escribiendo.length > 0) {
-                    if(!tituloSpan.dataset.orig) tituloSpan.dataset.orig = tituloSpan.innerText;
-                    tituloSpan.innerText = escribiendo.join(", ") + " está escribiendo...";
-                    tituloSpan.style.color = "#2ecc71";
-                } else {
-                    tituloSpan.innerText = tituloSpan.dataset.orig || tituloSpan.innerText;
-                    tituloSpan.style.color = "white";
-                }
+                document.getElementById('chat-subtitle').style.display = escribiendo ? 'block' : 'none';
             });
         }
 
-        function volverAContactos() {
-            if(salaActual) {
-                db.ref(salaActual).off();
-                db.ref("typing/" + salaActual).off();
-                db.ref("typing/" + salaActual + "/" + usuarioActual).set(false);
-            }
-            salaActual = ""; 
-            document.getElementById('chat-container').style.display = 'none';
-            document.getElementById('contacts-container').style.display = 'flex';
-        }
+        function escucharMensajes() {
+            db.ref(salaActual).on("value", (snapshot) => {
+                const box = document.getElementById("messages");
+                let htmlTemp = "";
+                snapshot.forEach((child) => {
+                    const data = child.val();
+                    const msgId = child.key;
+                    const esMio = data.u === usuarioActual;
 
-        function toggleEmojiPicker() {
-            const picker = document.getElementById('emoji-picker');
-            picker.style.display = (picker.style.display === 'grid') ? 'none' : 'grid';
-        }
+                    if (!esMio && data.r === false && document.visibilityState === 'visible') {
+                        db.ref(`${salaActual}/${msgId}/r`).set(true);
+                    }
 
-        function addEmoji(emoji) {
-            const input = document.getElementById('msg-input');
-            input.value += emoji;
-            autoResize(input); 
-            toggleEmojiPicker();
-            input.focus();
-        }
+                    const alineacion = esMio ? 'me' : 'other';
+                    let contenido = !esMio ? `<small>${data.u}</small>` : "";
+                    if(data.t) contenido += `<span>${data.t}</span>`;
+                    if(data.file) {
+                        if(data.fileType.startsWith("image/")) {
+                            contenido += `<img src="${data.file}" class="attachment" onclick="window.open(this.src)">`;
+                        } else if(data.fileType.startsWith("audio/")) {
+                            contenido += `<audio controls src="${data.file}"></audio>`;
+                        } else {
+                            contenido += `<a href="${data.file}" download="${data.fileName}" class="file-link"><i class="fas fa-file-download"></i> ${data.fileName}</a>`;
+                        }
+                    }
 
-        function reaccionar(msgId) {
-            const emoji = prompt("Reacciona con un emoji (ej: ❤️, 👍, 😂):", "❤️");
-            if (emoji) {
-                const rRef = db.ref(`${salaActual}/${msgId}/reacciones/${emoji}`);
-                rRef.transaction((currentValue) => (currentValue || 0) + 1);
-            }
+                    if(data.reacciones) {
+                        contenido += `<div class="reactions-container">`;
+                        for(let e in data.reacciones) {
+                            contenido += `<div class="reaction-badge">${e} ${data.reacciones[e]}</div>`;
+                        }
+                        contenido += `</div>`;
+                    }
+
+                    const checkClass = data.r ? "read" : "";
+                    const statusInfo = `<div class="status-info">
+                        <span class="timestamp">${data.h || '--:--'}</span>
+                        ${esMio ? `<i class="fas fa-check-double check-icon ${checkClass}"></i>` : ''}
+                    </div>`;
+
+                    htmlTemp += `<div class="msg ${alineacion}" ondblclick="reaccionar('${msgId}')">${contenido}${statusInfo}</div>`;
+                });
+                box.innerHTML = htmlTemp;
+                scrollToBottom();
+            });
         }
 
         function enviar() {
@@ -401,11 +404,33 @@
                 const ahora = new Date();
                 const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
                 db.ref(salaActual).push({ u: usuarioActual, t: texto, h: horaStr, r: false });
-                db.ref("typing/" + salaActual + "/" + usuarioActual).set(false);
+                db.ref(`typing/${salaActual}/${usuarioActual}`).set(false);
                 input.value = "";
                 input.style.height = 'auto'; 
                 input.focus();
             }
+        }
+
+        function handleScroll(el) {
+            const btn = document.getElementById('scroll-down');
+            const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 100;
+            btn.style.display = isAtBottom ? 'none' : 'flex';
+        }
+
+        function scrollToBottom() {
+            const box = document.getElementById("messages");
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function volverAContactos() {
+            if(salaActual) {
+                db.ref(salaActual).off();
+                db.ref(`typing/${salaActual}`).off();
+                db.ref(`typing/${salaActual}/${usuarioActual}`).set(false);
+            }
+            salaActual = ""; 
+            document.getElementById('chat-container').style.display = 'none';
+            document.getElementById('contacts-container').style.display = 'flex';
         }
 
         function enviarArchivo(input) {
@@ -441,99 +466,63 @@
                         stream.getTracks().forEach(track => track.stop());
                     };
                     mediaRecorder.start();
-                    isRecording = true;
-                    micBtn.classList.add('recording');
-                } catch (err) { alert("No se pudo acceder al micrófono"); }
+                    isRecording = true; micBtn.classList.add('recording');
+                } catch (err) { alert("Micrófono no disponible"); }
             } else {
-                mediaRecorder.stop();
-                isRecording = false;
-                micBtn.classList.remove('recording');
+                mediaRecorder.stop(); isRecording = false; micBtn.classList.remove('recording');
             }
         }
 
-        function vaciarChat() {
-            if(confirm("¿Borrar historial?")) db.ref(salaActual).remove();
+        function toggleEmojiPicker() {
+            const p = document.getElementById('emoji-picker');
+            p.style.display = (p.style.display === 'grid') ? 'none' : 'grid';
         }
 
-        function escucharMensajes() {
-            // Usamos .on("value") asegurando limpieza previa de mensajes
-            db.ref(salaActual).on("value", (snapshot) => {
-                const box = document.getElementById("messages");
-                let htmlTemp = ""; // Usamos una variable temporal para construir el HTML y evitar renderizados parciales
-
-                snapshot.forEach((child) => {
-                    const data = child.val();
-                    const msgId = child.key;
-                    const esMio = data.u === usuarioActual;
-
-                    // Manejo de visto y notificaciones
-                    if (!esMio && data.r === false) {
-                        if (document.visibilityState === 'visible') {
-                            db.ref(`${salaActual}/${msgId}/r`).set(true);
-                        } else if (Notification.permission === "granted") {
-                            new Notification("UrriChat: Nuevo mensaje", { body: `${data.u}: ${data.t || 'Archivo/Voz'}` });
-                        }
-                    }
-
-                    // Construcción del mensaje
-                    const alineacion = esMio ? 'me' : 'other';
-                    let contenido = !esMio ? `<small>${data.u}</small>` : "";
-                    
-                    if(data.t) contenido += `<span>${data.t}</span>`;
-                    if(data.file) {
-                        if(data.fileType.startsWith("image/")) {
-                            contenido += `<img src="${data.file}" class="attachment" onclick="window.open(this.src)">`;
-                        } else if(data.fileType.startsWith("audio/")) {
-                            contenido += `<audio controls src="${data.file}"></audio>`;
-                        } else {
-                            contenido += `<a href="${data.file}" download="${data.fileName}" class="file-link"><i class="fas fa-file-download"></i> ${data.fileName}</a>`;
-                        }
-                    }
-
-                    if(data.reacciones) {
-                        contenido += `<div class="reactions-container">`;
-                        for(let e in data.reacciones) {
-                            contenido += `<div class="reaction-badge">${e} ${data.reacciones[e]}</div>`;
-                        }
-                        contenido += `</div>`;
-                    }
-
-                    const checkClass = data.r ? "read" : "";
-                    const statusInfo = `<div class="status-info">
-                        <span class="timestamp">${data.h || '--:--'}</span>
-                        ${esMio ? `<i class="fas fa-check-double check-icon ${checkClass}"></i>` : ''}
-                    </div>`;
-
-                    htmlTemp += `<div class="msg ${alineacion}" ondblclick="reaccionar('${msgId}')">${contenido}${statusInfo}</div>`;
-                });
-
-                // Actualizamos el DOM una sola vez
-                box.innerHTML = htmlTemp;
-                box.scrollTop = box.scrollHeight;
-            });
+        function addEmoji(e) {
+            const i = document.getElementById('msg-input');
+            i.value += e; autoResize(i); toggleEmojiPicker(); i.focus();
         }
 
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === 'visible' && salaActual) {
-                db.ref(salaActual).once("value", (snapshot) => {
-                    snapshot.forEach((child) => {
-                        if (child.val().u !== usuarioActual && child.val().r === false) {
-                            db.ref(`${salaActual}/${child.key}/r`).set(true);
-                        }
-                    });
-                });
+        /* --- ACTUALIZACIÓN DE REACCIONES --- */
+        function reaccionar(msgId) {
+            // Ampliamos el menú de opciones rápidas
+            const menu = "Opciones rápidas:\n😊, 😂, ❤️, 👍, 🔥, 😮, 😢, 👏, 😎, 🎉\n\nO escribe tu propio emoji:";
+            const emoji = prompt(menu, "❤️");
+            
+            if (emoji) {
+                // Mantenemos tu función transaction intacta
+                const rRef = db.ref(`${salaActual}/${msgId}/reacciones/${emoji}`);
+                rRef.transaction((currentValue) => (currentValue || 0) + 1);
             }
-        });
+        }
+
+        function vaciarChat() { if(confirm("¿Borrar historial?")) db.ref(salaActual).remove(); }
+        
+        function cerrarSesion() {
+            if (confirm("¿Cerrar sesión?")) {
+                if (usuarioActual) db.ref("usuarios/" + usuarioActual).set("offline");
+                localStorage.removeItem('urrichat_user');
+                window.location.reload();
+            }
+        }
+
+        function editarNombre() {
+            let n = prompt("Nuevo nombre:", usuarioActual);
+            if (n && n !== usuarioActual) {
+                db.ref("usuarios/" + usuarioActual).set("offline");
+                usuarioActual = n;
+                localStorage.setItem('urrichat_user', n);
+                db.ref("usuarios/" + n).set("online");
+                document.getElementById('mi-perfil').innerText = "● " + n;
+            }
+        }
 
         window.onload = () => {
             const savedUser = localStorage.getItem('urrichat_user');
             if (savedUser) registrarUsuario(savedUser);
+            if ("Notification" in window) Notification.requestPermission();
         };
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-            .then(() => console.log("Service Worker Registrado con éxito"));
-        }
     </script>
 </body>
 </html>
