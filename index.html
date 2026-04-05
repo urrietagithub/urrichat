@@ -58,19 +58,33 @@
         .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a20; border-bottom: 1px solid #333; }
         .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         
-        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: center; position: relative; }
-        input#msg-input { flex: 1; padding: 12px; border-radius: 25px; border: none; background: #2c2c34; color: white; outline: none; padding-left: 20px; min-width: 0; }
+        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: flex-end; position: relative; }
         
-        /* CORRECCIÓN: Evitamos que los botones se encojan */
+        /* CORRECCIÓN: Estilo para que el textarea se vea como tu input anterior */
+        textarea#msg-input { 
+            flex: 1; 
+            padding: 12px 20px; 
+            border-radius: 20px; 
+            border: none; 
+            background: #2c2c34; 
+            color: white; 
+            outline: none; 
+            resize: none; 
+            font-family: inherit;
+            font-size: 14px;
+            max-height: 150px; /* Para que no ocupe toda la pantalla */
+            min-height: 20px;
+            overflow-y: auto;
+        }
+        
         button#main-btn { width: 45px; height: 45px; flex-shrink: 0; background: #007bff; color: white; border: none; border-radius: 50%; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
         
         small { display: block; font-size: 11px; color: #88ccff; margin-bottom: 4px; font-weight: bold; }
         #file-input { display: none; }
         
-        .btn-icon { background: none; border: none; color: #007bff; font-size: 1.2rem; cursor: pointer; padding: 5px; transition: 0.2s; flex-shrink: 0; }
+        .btn-icon { background: none; border: none; color: #007bff; font-size: 1.2rem; cursor: pointer; padding: 5px; transition: 0.2s; flex-shrink: 0; margin-bottom: 5px; }
         .btn-icon:hover { color: #fff; }
 
-        /* Estilo específico para el audio */
         audio { height: 35px; max-width: 100%; margin-top: 5px; filter: invert(1); }
         .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -128,7 +142,9 @@
             <button class="btn-icon" onclick="toggleEmojiPicker()"><i class="far fa-smile"></i></button>
             <button class="btn-icon" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip"></i></button>
             <button class="btn-icon" id="mic-btn" onclick="toggleAudio()"><i class="fas fa-microphone"></i></button>
-            <input type="text" id="msg-input" placeholder="Escribe tu mensaje..." onkeypress="if(event.key==='Enter') enviar()">
+            
+            <textarea id="msg-input" placeholder="Escribe tu mensaje..." rows="1" oninput="autoResize(this)" onkeydown="checkEnter(event)"></textarea>
+            
             <button id="main-btn" onclick="enviar()">
                 <i class="fas fa-paper-plane"></i>
             </button>
@@ -136,6 +152,20 @@
     </div>
 
     <script>
+        // --- FUNCIÓN DE AJUSTE AUTOMÁTICO ---
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        // Manejar el Enter para enviar (y Shift+Enter para salto de línea)
+        function checkEnter(event) {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                enviar();
+            }
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -234,9 +264,11 @@
         }
 
         function addEmoji(emoji) {
-            document.getElementById('msg-input').value += emoji;
+            const input = document.getElementById('msg-input');
+            input.value += emoji;
+            autoResize(input); // Ajustar tamaño al añadir emoji
             toggleEmojiPicker();
-            document.getElementById('msg-input').focus();
+            input.focus();
         }
 
         function reaccionar(msgId) {
@@ -255,6 +287,7 @@
                 const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
                 db.ref(salaActual).push({ u: usuarioActual, t: texto, h: horaStr, r: false });
                 input.value = "";
+                input.style.height = 'auto'; // Resetear altura
                 input.focus();
             }
         }
