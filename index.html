@@ -3,90 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UrriChat Web</title>
+    <title>UrriChat</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2248%22 fill=%22%23007bff%22/><path d=%22M30 35h40v25H45L30 75V35z%22 fill=%22white%22/></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        /* --- AJUSTE PARA CENTRAR TODO --- */
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: #0f0f12; 
-            color: white; 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            justify-content: center; 
-            align-items: center;     
-        }
-
-        #login { 
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 80%;
-            max-width: 400px;
-            text-align: center; 
-        }
-
-        /* --- CENTRAR PLACEHOLDER EN LOGIN --- */
-        #username {
-            text-align: center;
-        }
-
-        #contacts-container, #chat-container { 
-            display: none; 
-            flex-direction: column; 
-            width: 100%; 
-            max-width: 500px; 
-            height: 100%; 
-            background: #0f0f12;
-        }
-
+        /* --- ESTILOS BASE MANTENIDOS --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f12; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center; }
+        #login { display: flex; flex-direction: column; gap: 20px; width: 80%; max-width: 400px; text-align: center; }
+        #username { text-align: center; }
+        #contacts-container, #chat-container { display: none; flex-direction: column; width: 100%; max-width: 500px; height: 100%; background: #0f0f12; }
         .online-dot { height: 10px; width: 10px; background-color: #2ecc71; border-radius: 50%; display: inline-block; margin-right: 10px; box-shadow: 0 0 5px #2ecc71; }
         .contact-card { background: #1a1a20; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; }
         .contact-card:hover { border-color: #007bff; background: #25252d; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
         
-        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; }
+        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; display: flex; flex-direction: column; cursor: pointer; user-select: none; }
         .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; }
         .msg.other { align-self: flex-start; background: #2c2c34; border-bottom-left-radius: 2px; }
         
+        .reactions-container { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+        .reaction-badge { background: #1a1a20; border: 1px solid #444; border-radius: 10px; padding: 2px 6px; font-size: 12px; display: flex; align-items: center; gap: 3px; }
+
+        .emoji-picker { 
+            display: none; 
+            position: absolute; 
+            bottom: 70px; 
+            left: 15px; 
+            background: #1a1a20; 
+            border: 1px solid #333; 
+            padding: 10px; 
+            border-radius: 15px; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 8px; 
+            z-index: 100; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8); 
+        }
+        .emoji-item { cursor: pointer; font-size: 1.2rem; transition: 0.2s; text-align: center; }
+        .emoji-item:hover { transform: scale(1.3); }
+
+        .attachment { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; }
+        .file-link { color: #fff; text-decoration: underline; font-size: 13px; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
+        
+        /* ESTILO PARA EL DOBLE CHECK */
+        .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; }
+        .timestamp { font-size: 9px; opacity: 0.7; }
+        .check-icon { font-size: 10px; color: #fff; opacity: 0.5; }
+        .check-icon.read { color: #88ccff; opacity: 1; }
+
         .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a20; border-bottom: 1px solid #333; }
         .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         
-        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 10px; align-items: center; }
+        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 10px; align-items: center; position: relative; }
         input { flex: 1; padding: 12px; border-radius: 25px; border: none; background: #2c2c34; color: white; outline: none; padding-left: 20px; }
-        
-        button#main-btn { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; }
+        button#main-btn { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         small { display: block; font-size: 11px; color: #88ccff; margin-bottom: 4px; font-weight: bold; }
-        
-        /* Estilo para los iconos de los nombres */
-        .user-icon { margin-right: 10px; color: #666; }
+        #file-input { display: none; }
+        .btn-icon { background: none; border: none; color: #007bff; font-size: 1.2rem; cursor: pointer; padding: 5px; transition: 0.2s; }
+        .btn-icon:hover { color: #fff; }
     </style>
 </head>
 <body>
 
     <div id="login">
         <i class="fas fa-comments" style="font-size: 4rem; color: #007bff;"></i>
-        <h1 style="color: #007bff; font-size: 2.5rem; margin: 0;">URRICHAT</h1>
-        <p style="color: #666;">Ingresa para comenzar</p>
-        <input type="text" id="username" placeholder="Tu nombre de usuario...">
-        <button id="main-btn" onclick="registrarUsuario()">CONECTAR <i class="fas fa-arrow-right"></i></button>
+        <h1 style="color: #007bff; font-size: 2.5rem; margin: 0;">UrriChat</h1>
+        <p style="color: #666;">Tu chat favorito</p>
+        <input type="text" id="username" placeholder="Introduce tu nombre de usuario...">
+        <button id="main-btn" onclick="registrarUsuario()">Conectar <i class="fas fa-arrow-right"></i></button>
     </div>
 
     <div id="contacts-container">
         <div class="header">
             <span id="mi-perfil" style="font-weight: bold; color: #2ecc71;"></span>
-            <button class="btn-header" onclick="editarNombre()"><i class="fas fa-user-edit"></i> PERFIL</button>
+            <button class="btn-header" onclick="editarNombre()"><i class="fas fa-user-edit"></i> Perfil</button>
         </div>
         <div id="lista-usuarios" style="padding: 15px; overflow-y: auto;">
-            <div class="contact-card" onclick="abrirChat('muro', 'SALA PÚBLICA')" style="border-left: 5px solid #007bff; background: #1e1e26;">
-                <span><i class="fas fa-users" style="margin-right: 10px;"></i> SALA PÚBLICA</span>
+            <div class="contact-card" onclick="abrirChat('muro', 'Todos')" style="border-left: 5px solid #007bff; background: #1e1e26;">
+                <span><i class="fas fa-users" style="margin-right: 10px;"></i> Todos</span>
                 <span class="online-dot"></span>
             </div>
-            <p style="color: #666; font-size: 12px; margin: 20px 0 10px 5px;">USUARIOS EN LÍNEA</p>
+            <p style="color: #666; font-size: 12px; margin: 20px 0 10px 5px;">Usuarios en línea</p>
             <div id="usuarios-conectados"></div>
         </div>
     </div>
@@ -97,9 +95,27 @@
             <span id="chat-title" style="font-weight: bold;">Chat</span>
             <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="vaciarChat()"><i class="fas fa-trash-alt"></i></button>
         </div>
+        
         <div id="messages"></div>
+
         <div class="input-area">
-            <input type="text" id="msg-input" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') enviar()">
+            <div id="emoji-picker" class="emoji-picker">
+                <span class="emoji-item" onclick="addEmoji('😊')">😊</span>
+                <span class="emoji-item" onclick="addEmoji('😂')">😂</span>
+                <span class="emoji-item" onclick="addEmoji('❤️')">❤️</span>
+                <span class="emoji-item" onclick="addEmoji('👍')">👍</span>
+                <span class="emoji-item" onclick="addEmoji('🔥')">🔥</span>
+                <span class="emoji-item" onclick="addEmoji('😮')">😮</span>
+                <span class="emoji-item" onclick="addEmoji('😢')">😢</span>
+                <span class="emoji-item" onclick="addEmoji('👏')">👏</span>
+                <span class="emoji-item" onclick="addEmoji('😎')">😎</span>
+                <span class="emoji-item" onclick="addEmoji('🎉')">🎉</span>
+            </div>
+
+            <input type="file" id="file-input" onchange="enviarArchivo(this)">
+            <button class="btn-icon" onclick="toggleEmojiPicker()"><i class="far fa-smile"></i></button>
+            <button class="btn-icon" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip"></i></button>
+            <input type="text" id="msg-input" placeholder="Escribe tu mensaje..." onkeypress="if(event.key==='Enter') enviar()">
             <button id="main-btn" onclick="enviar()" style="width: 45px; height: 45px; border-radius: 50%; padding: 0;">
                 <i class="fas fa-paper-plane"></i>
             </button>
@@ -107,7 +123,6 @@
     </div>
 
     <script>
-        // CONFIGURACIÓN DE FIREBASE (Se mantiene tu configuración original)
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -123,11 +138,17 @@
         let usuarioActual = "";
         let salaActual = "";
 
+        // Pedir permiso para notificaciones al cargar
+        if ("Notification" in window && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+
         function registrarUsuario() {
             let inputName = document.getElementById('username').value.trim();
             if (inputName) {
                 usuarioActual = inputName;
                 db.ref("usuarios/" + usuarioActual).set("online");
+                db.ref("usuarios/" + usuarioActual).onDisconnect().remove();
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('contacts-container').style.display = 'flex';
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
@@ -164,6 +185,7 @@
         }
 
         function abrirChat(id, titulo) {
+            if(salaActual) db.ref(salaActual).off();
             salaActual = id;
             document.getElementById('contacts-container').style.display = 'none';
             document.getElementById('chat-container').style.display = 'flex';
@@ -174,17 +196,54 @@
 
         function volverAContactos() {
             db.ref(salaActual).off();
+            salaActual = ""; // Resetear sala para no marcar leídos por error
             document.getElementById('chat-container').style.display = 'none';
             document.getElementById('contacts-container').style.display = 'flex';
+        }
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emoji-picker');
+            picker.style.display = (picker.style.display === 'grid') ? 'none' : 'grid';
+        }
+
+        function addEmoji(emoji) {
+            document.getElementById('msg-input').value += emoji;
+            toggleEmojiPicker();
+            document.getElementById('msg-input').focus();
+        }
+
+        function reaccionar(msgId) {
+            const emoji = prompt("Reacciona con un emoji (ej: ❤️, 👍, 😂):", "❤️");
+            if (emoji) {
+                const rRef = db.ref(`${salaActual}/${msgId}/reacciones/${emoji}`);
+                rRef.transaction((currentValue) => (currentValue || 0) + 1);
+            }
         }
 
         function enviar() {
             const input = document.getElementById('msg-input');
             const texto = input.value.trim();
             if (texto && salaActual) {
-                db.ref(salaActual).push({ u: usuarioActual, t: texto });
+                const ahora = new Date();
+                const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
+                // Agregado: r (read) para el check
+                db.ref(salaActual).push({ u: usuarioActual, t: texto, h: horaStr, r: false });
                 input.value = "";
+                input.focus();
             }
+        }
+
+        function enviarArchivo(input) {
+            const file = input.files[0];
+            if (!file || !salaActual) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const ahora = new Date();
+                const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
+                db.ref(salaActual).push({ u: usuarioActual, h: horaStr, file: e.target.result, fileName: file.name, fileType: file.type, r: false });
+            };
+            reader.readAsDataURL(file);
+            input.value = "";
         }
 
         function vaciarChat() {
@@ -193,19 +252,76 @@
 
         function escucharMensajes() {
             db.ref(salaActual).on("value", (snapshot) => {
-                if (!snapshot.exists()) document.getElementById("messages").innerHTML = "";
-            });
-            db.ref(salaActual).limitToLast(50).on("child_added", (snapshot) => {
-                const data = snapshot.val();
-                const msgDiv = document.createElement("div");
-                const esMio = data.u === usuarioActual;
-                msgDiv.className = `msg ${esMio ? 'me' : 'other'}`;
-                msgDiv.innerHTML = esMio ? data.t : `<small>${data.u}</small>${data.t}`;
                 const box = document.getElementById("messages");
-                box.appendChild(msgDiv);
+                box.innerHTML = "";
+                
+                snapshot.forEach((child) => {
+                    const data = child.val();
+                    const msgId = child.key;
+                    const esMio = data.u === usuarioActual;
+
+                    // LÓGICA DE NOTIFICACIONES Y VISTO
+                    if (!esMio && data.r === false) {
+                        // Si el chat está abierto, marcar como leído
+                        if (document.visibilityState === 'visible') {
+                            db.ref(`${salaActual}/${msgId}/r`).set(true);
+                        } else {
+                            // Si está minimizado, mandar notificación Push
+                            if (Notification.permission === "granted") {
+                                new Notification("UrriChat: Nuevo mensaje", { body: `${data.u}: ${data.t || 'Archivo'}` });
+                            }
+                        }
+                    }
+
+                    const msgDiv = document.createElement("div");
+                    msgDiv.className = `msg ${esMio ? 'me' : 'other'}`;
+                    msgDiv.ondblclick = () => reaccionar(msgId);
+                    
+                    let contenido = !esMio ? `<small>${data.u}</small>` : "";
+                    if(data.t) contenido += `<span>${data.t}</span>`;
+                    if(data.file) {
+                        if(data.fileType.startsWith("image/")) {
+                            contenido += `<img src="${data.file}" class="attachment" onclick="window.open(this.src)">`;
+                        } else {
+                            contenido += `<a href="${data.file}" download="${data.fileName}" class="file-link"><i class="fas fa-file-download"></i> ${data.fileName}</a>`;
+                        }
+                    }
+                    
+                    if(data.reacciones) {
+                        contenido += `<div class="reactions-container">`;
+                        for(let e in data.reacciones) {
+                            contenido += `<div class="reaction-badge">${e} ${data.reacciones[e]}</div>`;
+                        }
+                        contenido += `</div>`;
+                    }
+
+                    // Renderizado de Check Azul y Hora
+                    const checkClass = data.r ? "read" : "";
+                    contenido += `
+                        <div class="status-info">
+                            <span class="timestamp">${data.h || '--:--'}</span>
+                            ${esMio ? `<i class="fas fa-check-double check-icon ${checkClass}"></i>` : ''}
+                        </div>`;
+                    
+                    msgDiv.innerHTML = contenido;
+                    box.appendChild(msgDiv);
+                });
                 box.scrollTop = box.scrollHeight;
             });
         }
+
+        // Marcar mensajes como leídos cuando el usuario vuelve a la pestaña
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === 'visible' && salaActual) {
+                db.ref(salaActual).once("value", (snapshot) => {
+                    snapshot.forEach((child) => {
+                        if (child.val().u !== usuarioActual && child.val().r === false) {
+                            db.ref(`${salaActual}/${child.key}/r`).set(true);
+                        }
+                    });
+                });
+            }
+        });
     </script>
 </body>
 </html>
