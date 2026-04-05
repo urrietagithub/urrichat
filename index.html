@@ -14,7 +14,12 @@
         #login { display: flex; flex-direction: column; gap: 20px; width: 80%; max-width: 400px; text-align: center; }
         #username { text-align: center; }
         #contacts-container, #chat-container { display: none; flex-direction: column; width: 100%; max-width: 500px; height: 100%; background: #0f0f12; }
-        .online-dot { height: 10px; width: 10px; background-color: #2ecc71; border-radius: 50%; display: inline-block; margin-right: 10px; box-shadow: 0 0 5px #2ecc71; }
+        
+        /* CAMBIO AQUÍ: Clases para estados */
+        .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; transition: 0.3s; }
+        .dot-online { background-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+        .dot-offline { background-color: #ff4444; box-shadow: 0 0 5px #ff4444; }
+
         .contact-card { background: #1a1a20; padding: 15px; margin: 10px 0; border-radius: 12px; cursor: pointer; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; }
         .contact-card:hover { border-color: #007bff; background: #25252d; }
         #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
@@ -46,7 +51,6 @@
         .attachment { max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer; }
         .file-link { color: #fff; text-decoration: underline; font-size: 13px; margin-top: 5px; display: flex; align-items: center; gap: 5px; }
         
-        /* ESTILO PARA EL DOBLE CHECK */
         .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; }
         .timestamp { font-size: 9px; opacity: 0.7; }
         .check-icon { font-size: 10px; color: #fff; opacity: 0.5; }
@@ -82,9 +86,9 @@
         <div id="lista-usuarios" style="padding: 15px; overflow-y: auto;">
             <div class="contact-card" onclick="abrirChat('muro', 'Todos')" style="border-left: 5px solid #007bff; background: #1e1e26;">
                 <span><i class="fas fa-users" style="margin-right: 10px;"></i> Todos</span>
-                <span class="online-dot"></span>
+                <span class="online-dot dot-online"></span>
             </div>
-            <p style="color: #666; font-size: 12px; margin: 20px 0 10px 5px;">Usuarios en línea</p>
+            <p style="color: #666; font-size: 12px; margin: 20px 0 10px 5px;">Directorio de Usuarios</p>
             <div id="usuarios-conectados"> </div>
         </div>
     </div>
@@ -138,7 +142,6 @@
         let usuarioActual = "";
         let salaActual = "";
 
-        // Pedir permiso para notificaciones al cargar
         if ("Notification" in window && Notification.permission !== "denied") {
             Notification.requestPermission();
         }
@@ -147,8 +150,11 @@
             let inputName = document.getElementById('username').value.trim();
             if (inputName) {
                 usuarioActual = inputName;
+                // CAMBIO: Al conectar ponemos online
                 db.ref("usuarios/" + usuarioActual).set("online");
-                db.ref("usuarios/" + usuarioActual).onDisconnect().remove();
+                // CAMBIO: Al desconectar, en lugar de remove(), ponemos offline
+                db.ref("usuarios/" + usuarioActual).onDisconnect().set("offline");
+                
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('contacts-container').style.display = 'flex';
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
@@ -159,9 +165,11 @@
         function editarNombre() {
             let nuevoNombre = prompt("Nuevo nombre:", usuarioActual);
             if (nuevoNombre && nuevoNombre !== usuarioActual) {
-                db.ref("usuarios/" + usuarioActual).remove();
+                // CAMBIO: Al cambiar nombre, el anterior queda offline (o puedes removerlo si prefieres)
+                db.ref("usuarios/" + usuarioActual).set("offline"); 
                 usuarioActual = nuevoNombre;
                 db.ref("usuarios/" + usuarioActual).set("online");
+                db.ref("usuarios/" + usuarioActual).onDisconnect().set("offline");
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
             }
         }
@@ -172,11 +180,16 @@
                 listaDiv.innerHTML = "";
                 snapshot.forEach((child) => {
                     const nombre = child.key;
+                    const estado = child.val(); // "online" u "offline"
+                    
                     if (nombre !== usuarioActual) {
                         const card = document.createElement("div");
                         card.className = "contact-card";
-                        // SE CORRIGIÓ EL MARGEN DEL ICONO AQUÍ ABAJO
-                        card.innerHTML = `<span><i class="fas fa-user-circle user-icon" style="margin-right: 10px;"></i>${nombre}</span><span class="online-dot"></span>`;
+                        
+                        // CAMBIO: Lógica para decidir si el punto es verde o rojo
+                        const statusClass = (estado === "online") ? "dot-online" : "dot-offline";
+                        
+                        card.innerHTML = `<span><i class="fas fa-user-circle user-icon" style="margin-right: 10px;"></i>${nombre}</span><span class="online-dot ${statusClass}"></span>`;
                         const salaID = "privado_" + [usuarioActual, nombre].sort().join("_");
                         card.onclick = () => abrirChat(salaID, nombre);
                         listaDiv.appendChild(card);
@@ -197,7 +210,7 @@
 
         function volverAContactos() {
             db.ref(salaActual).off();
-            salaActual = ""; // Resetear sala para no marcar leídos por error
+            salaActual = ""; 
             document.getElementById('chat-container').style.display = 'none';
             document.getElementById('contacts-container').style.display = 'flex';
         }
