@@ -295,7 +295,7 @@
                 if (usuarioActual) {
                     db.ref("usuarios/" + usuarioActual).set("offline");
                 }
-                localStorage.removeItem('urrichat_user');
+                // Mantenemos el localStorage para que el nombre se "recuerde"
                 window.location.reload();
             }
         }
@@ -516,7 +516,10 @@
 
         window.onload = () => {
             const savedUser = localStorage.getItem('urrichat_user');
-            if (savedUser) registrarUsuario(savedUser);
+            if (savedUser) {
+                // Solo escribimos el nombre en el cuadro de texto para recordarlo
+                document.getElementById('username').value = savedUser;
+            }
         };
     </script>
 </body>
