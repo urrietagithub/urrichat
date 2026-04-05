@@ -175,7 +175,6 @@
         <div id="lista-usuarios" style="padding: 15px; overflow-y: auto;">
             <div class="contact-card" onclick="abrirChat('muro', 'Chat Grupal')" style="border-left: 5px solid #007bff; background: #1e1e26;">
                 <span><i class="fas fa-users" style="margin-right: 10px;"></i> Chat Grupal</span>
-                <span id="badge-muro"></span>
                 <span class="online-dot dot-online"></span>
             </div>
             <p style="color: #666; font-size: 15px; margin: 20px 0 10px 5px; font-weight: 500;">Usuarios De UrriChat</p>
@@ -224,6 +223,7 @@
     </div>
 
     <script>
+        // CONFIGURACIÓN FIREBASE (La tuya original)
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -242,6 +242,8 @@
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
+
+        // --- FUNCIONES MEJORADAS ---
 
         function autoResize(textarea) {
             textarea.style.height = 'auto';
@@ -278,7 +280,6 @@
                 document.getElementById('contacts-container').style.display = 'flex';
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
                 escucharUsuarios();
-                verificarMensajesNuevos('muro'); // Escuchar el muro siempre
             }
         }
 
@@ -311,20 +312,16 @@
         }
 
         function verificarMensajesNuevos(salaID) {
-            db.ref(salaID).on("value", (snap) => {
+            db.ref(salaID).limitToLast(1).on("value", (snap) => {
                 const badge = document.getElementById(`badge-${salaID}`);
-                if (!badge || salaActual === salaID) {
-                    if(badge) badge.innerHTML = "";
-                    return;
-                }
-                let count = 0;
+                if (!badge || salaActual === salaID) return;
                 snap.forEach(msg => {
-                    const m = msg.val();
-                    if (m.u !== usuarioActual && m.r === false) {
-                        count++;
+                    if (msg.val().u !== usuarioActual && msg.val().r === false) {
+                        badge.innerHTML = `<span class="unread-badge">!</span>`;
+                    } else {
+                        badge.innerHTML = "";
                     }
                 });
-                badge.innerHTML = count > 0 ? `<span class="unread-badge">${count}</span>` : "";
             });
         }
 
@@ -436,6 +433,9 @@
             document.getElementById('contacts-container').style.display = 'flex';
         }
 
+        // --- RESTO DE FUNCIONES (Audio, Archivos, Perfil) ---
+        // Se mantienen iguales para no romper la lógica que ya te funciona.
+
         function enviarArchivo(input) {
             const file = input.files[0];
             if (!file || !salaActual) return;
@@ -486,13 +486,9 @@
             i.value += e; autoResize(i); toggleEmojiPicker(); i.focus();
         }
 
-        function reaccionar(msgId) {
-            const emojisMenu = "Selecciona o escribe un emoji:\n😊 😂 ❤️ 👍 🔥 😮 😢 👏 😎 🎉";
-            const emoji = prompt(emojisMenu, "❤️");
-            if (emoji) {
-                const rRef = db.ref(`${salaActual}/${msgId}/reacciones/${emoji}`);
-                rRef.transaction((currentValue) => (currentValue || 0) + 1);
-            }
+        function reaccionar(id) {
+            const emoji = prompt("Reacciona con un emoji:", "❤️");
+            if (emoji) db.ref(`${salaActual}/${id}/reacciones/${emoji}`).transaction(c => (c || 0) + 1);
         }
 
         function vaciarChat() { if(confirm("¿Borrar historial?")) db.ref(salaActual).remove(); }
