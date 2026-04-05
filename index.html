@@ -85,7 +85,7 @@
                 <span class="online-dot"></span>
             </div>
             <p style="color: #666; font-size: 12px; margin: 20px 0 10px 5px;">Usuarios en línea</p>
-            <div id="usuarios-conectados"></div>
+            <div id="usuarios-conectados"> </div>
         </div>
     </div>
 
@@ -175,7 +175,8 @@
                     if (nombre !== usuarioActual) {
                         const card = document.createElement("div");
                         card.className = "contact-card";
-                        card.innerHTML = `<span><i class="fas fa-user-circle user-icon"></i>${nombre}</span><span class="online-dot"></span>`;
+                        // SE CORRIGIÓ EL MARGEN DEL ICONO AQUÍ ABAJO
+                        card.innerHTML = `<span><i class="fas fa-user-circle user-icon" style="margin-right: 10px;"></i>${nombre}</span><span class="online-dot"></span>`;
                         const salaID = "privado_" + [usuarioActual, nombre].sort().join("_");
                         card.onclick = () => abrirChat(salaID, nombre);
                         listaDiv.appendChild(card);
@@ -226,7 +227,6 @@
             if (texto && salaActual) {
                 const ahora = new Date();
                 const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
-                // Agregado: r (read) para el check
                 db.ref(salaActual).push({ u: usuarioActual, t: texto, h: horaStr, r: false });
                 input.value = "";
                 input.focus();
@@ -260,13 +260,10 @@
                     const msgId = child.key;
                     const esMio = data.u === usuarioActual;
 
-                    // LÓGICA DE NOTIFICACIONES Y VISTO
                     if (!esMio && data.r === false) {
-                        // Si el chat está abierto, marcar como leído
                         if (document.visibilityState === 'visible') {
                             db.ref(`${salaActual}/${msgId}/r`).set(true);
                         } else {
-                            // Si está minimizado, mandar notificación Push
                             if (Notification.permission === "granted") {
                                 new Notification("UrriChat: Nuevo mensaje", { body: `${data.u}: ${data.t || 'Archivo'}` });
                             }
@@ -295,7 +292,6 @@
                         contenido += `</div>`;
                     }
 
-                    // Renderizado de Check Azul y Hora
                     const checkClass = data.r ? "read" : "";
                     contenido += `
                         <div class="status-info">
@@ -310,7 +306,6 @@
             });
         }
 
-        // Marcar mensajes como leídos cuando el usuario vuelve a la pestaña
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === 'visible' && salaActual) {
                 db.ref(salaActual).once("value", (snapshot) => {
