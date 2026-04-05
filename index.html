@@ -9,10 +9,90 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        /* --- ESTILOS BASE MANTENIDOS --- */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f12; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; justify-content: center; align-items: center; }
-        #login { display: flex; flex-direction: column; gap: 20px; width: 80%; max-width: 400px; text-align: center; }
-        #username { text-align: center; }
+        /* --- ESTILOS BASE --- */
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: radial-gradient(circle at center, #1a1a20 0%, #0f0f12 100%); 
+            color: white; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        /* --- MEJORA PROFESIONAL DEL LOGIN --- */
+        #login { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 25px; 
+            width: 85%; 
+            max-width: 380px; 
+            text-align: center; 
+            padding: 40px;
+            background: rgba(26, 26, 32, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        #login i.fa-comments {
+            filter: drop-shadow(0 0 15px rgba(0, 123, 255, 0.4));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        #username { 
+            text-align: center; 
+            padding: 14px 20px; 
+            border-radius: 15px; 
+            border: 2px solid #2c2c34; 
+            background: #0f0f12; 
+            color: white; 
+            outline: none; 
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+
+        #username:focus { 
+            border-color: #007bff; 
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.3); 
+            background: #1a1a20;
+        }
+
+        #username::placeholder { 
+            color: #666; 
+            font-style: normal; 
+            opacity: 1; 
+        }
+
+        #login-btn {
+            padding: 14px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        #login-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        #login-btn:active { transform: translateY(0); }
+
         #contacts-container, #chat-container { display: none; flex-direction: column; width: 100%; max-width: 500px; height: 100%; background: #0f0f12; }
         
         .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 10px; transition: background-color 0.3s, box-shadow 0.3s; }
@@ -23,27 +103,16 @@
         .contact-card:hover { border-color: #007bff; background: #25252d; }
         #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
         
+        /* AJUSTE DE TAMAÑO DE LETRA EN MENSAJES */
         .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; position: relative; display: flex; flex-direction: column; cursor: pointer; user-select: none; }
+        .msg span { font-size: 16px; line-height: 1.4; }
         .msg.me { align-self: flex-end; background: #007bff; border-bottom-right-radius: 2px; }
         .msg.other { align-self: flex-start; background: #2c2c34; border-bottom-left-radius: 2px; }
         
         .reactions-container { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
         .reaction-badge { background: #1a1a20; border: 1px solid #444; border-radius: 10px; padding: 2px 6px; font-size: 12px; display: flex; align-items: center; gap: 3px; }
 
-        .emoji-picker { 
-            display: none; 
-            position: absolute; 
-            bottom: 70px; 
-            left: 15px; 
-            background: #1a1a20; 
-            border: 1px solid #333; 
-            padding: 10px; 
-            border-radius: 15px; 
-            grid-template-columns: repeat(5, 1fr); 
-            gap: 8px; 
-            z-index: 100; 
-            box-shadow: 0 5px 20px rgba(0,0,0,0.8); 
-        }
+        .emoji-picker { display: none; position: absolute; bottom: 70px; left: 15px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 100; box-shadow: 0 5px 20px rgba(0,0,0,0.8); }
         .emoji-item { cursor: pointer; font-size: 1.2rem; transition: 0.2s; text-align: center; }
         .emoji-item:hover { transform: scale(1.3); }
 
@@ -60,21 +129,8 @@
         
         .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: flex-end; position: relative; }
         
-        textarea#msg-input { 
-            flex: 1; 
-            padding: 12px 20px; 
-            border-radius: 20px; 
-            border: none; 
-            background: #2c2c34; 
-            color: white; 
-            outline: none; 
-            resize: none; 
-            font-family: inherit;
-            font-size: 14px;
-            max-height: 150px; 
-            min-height: 20px;
-            overflow-y: auto;
-        }
+        /* AJUSTE DE TAMAÑO DE LETRA EN EL INPUT DE ESCRITURA */
+        textarea#msg-input { flex: 1; padding: 12px 20px; border-radius: 20px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-family: inherit; font-size: 16px; max-height: 150px; min-height: 20px; overflow-y: auto; }
         
         button#main-btn { width: 45px; height: 45px; flex-shrink: 0; background: #007bff; color: white; border: none; border-radius: 50%; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
         
@@ -92,24 +148,31 @@
 <body>
 
     <div id="login">
-        <i class="fas fa-comments" style="font-size: 4rem; color: #007bff;"></i>
-        <h1 style="color: #007bff; font-size: 2.5rem; margin: 0;">UrriChat</h1>
-        <p style="color: #666;">Tu chat favorito</p>
+        <div>
+            <i class="fas fa-comments" style="font-size: 4.5rem; color: #007bff; margin-bottom: 10px;"></i>
+            <h1 style="color: #007bff; font-size: 2.8rem; margin: 0; letter-spacing: -1px;">UrriChat</h1>
+            <p style="color: #888; margin-top: 5px; font-size: 1rem;">Tu chat favorito</p>
+        </div>
         <input type="text" id="username" placeholder="Introduce tu nombre de usuario...">
-        <button id="login-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 25px; font-weight: bold; cursor: pointer;" onclick="registrarUsuario()">Conectar <i class="fas fa-arrow-right"></i></button>
+        <button id="login-btn" onclick="registrarUsuario()">
+            Conectar <i class="fas fa-arrow-right" style="margin-left: 8px;"></i>
+        </button>
     </div>
 
     <div id="contacts-container">
         <div class="header">
             <span id="mi-perfil" style="font-weight: bold; color: #2ecc71;"></span>
-            <button class="btn-header" onclick="editarNombre()"><i class="fas fa-user-edit"></i> Perfil</button>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-header" onclick="editarNombre()"><i class="fas fa-user-edit"></i> Perfil</button>
+                <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt"></i> Salir</button>
+            </div>
         </div>
         <div id="lista-usuarios" style="padding: 15px; overflow-y: auto;">
             <div class="contact-card" onclick="abrirChat('muro', 'Chat Grupal')" style="border-left: 5px solid #007bff; background: #1e1e26;">
                 <span><i class="fas fa-users" style="margin-right: 10px;"></i> Chat Grupal</span>
                 <span class="online-dot dot-online"></span>
             </div>
-            <p style="color: #666; font-size: 12px; margin: 20px 0 10px 5px;">Usuarios De UrriChat</p>
+            <p style="color: #666; font-size: 15px; margin: 20px 0 10px 5px; font-weight: 500;">Usuarios De UrriChat</p>
             <div id="usuarios-conectados"> </div>
         </div>
     </div>
@@ -152,12 +215,10 @@
 
     <script>
         let typingTimeout;
-        // --- FUNCIÓN DE AJUSTE AUTOMÁTICO + INDICADOR ESCRIBIENDO ---
         function autoResize(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
             
-            // Lógica Escribiendo
             if (salaActual && usuarioActual) {
                 db.ref("typing/" + salaActual + "/" + usuarioActual).set(true);
                 clearTimeout(typingTimeout);
@@ -167,7 +228,6 @@
             }
         }
 
-        // Manejar el Enter para enviar (y Shift+Enter para salto de línea)
         function checkEnter(event) {
             if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
@@ -230,6 +290,16 @@
             }
         }
 
+        function cerrarSesion() {
+            if (confirm("¿Cerrar sesión actual?")) {
+                if (usuarioActual) {
+                    db.ref("usuarios/" + usuarioActual).set("offline");
+                }
+                localStorage.removeItem('urrichat_user');
+                window.location.reload();
+            }
+        }
+
         function escucharUsuarios() {
             db.ref("usuarios").on("value", (snapshot) => {
                 const listaDiv = document.getElementById("usuarios-conectados");
@@ -253,7 +323,7 @@
         function abrirChat(id, titulo) {
             if(salaActual) {
                 db.ref(salaActual).off();
-                db.ref("typing/" + salaActual).off(); // Limpiar listener previo
+                db.ref("typing/" + salaActual).off();
             }
             salaActual = id;
             document.getElementById('contacts-container').style.display = 'none';
@@ -261,7 +331,7 @@
             document.getElementById('chat-title').innerText = titulo;
             document.getElementById('messages').innerHTML = "";
             escucharMensajes();
-            escucharEscribiendo(); // Nueva función
+            escucharEscribiendo();
         }
 
         function escucharEscribiendo() {
@@ -324,10 +394,7 @@
                 const ahora = new Date();
                 const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
                 db.ref(salaActual).push({ u: usuarioActual, t: texto, h: horaStr, r: false });
-                
-                // Limpiar estado escribiendo
                 db.ref("typing/" + salaActual + "/" + usuarioActual).set(false);
-                
                 input.value = "";
                 input.style.height = 'auto'; 
                 input.focus();
@@ -361,13 +428,7 @@
                         reader.onload = (e) => {
                             const ahora = new Date();
                             const horaStr = ahora.getHours() + ":" + ahora.getMinutes().toString().padStart(2, '0');
-                            db.ref(salaActual).push({ 
-                                u: usuarioActual, 
-                                h: horaStr, 
-                                file: e.target.result, 
-                                fileType: 'audio/webm', 
-                                r: false 
-                            });
+                            db.ref(salaActual).push({ u: usuarioActual, h: horaStr, file: e.target.result, fileType: 'audio/webm', r: false });
                         };
                         reader.readAsDataURL(audioBlob);
                         stream.getTracks().forEach(track => track.stop());
