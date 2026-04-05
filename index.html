@@ -58,12 +58,16 @@
         .header { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #1a1a20; border-bottom: 1px solid #333; }
         .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         
-        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 10px; align-items: center; position: relative; }
-        input { flex: 1; padding: 12px; border-radius: 25px; border: none; background: #2c2c34; color: white; outline: none; padding-left: 20px; }
-        button#main-btn { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 25px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .input-area { display: flex; padding: 15px; background: #1a1a20; gap: 8px; align-items: center; position: relative; }
+        input#msg-input { flex: 1; padding: 12px; border-radius: 25px; border: none; background: #2c2c34; color: white; outline: none; padding-left: 20px; min-width: 0; }
+        
+        /* CORRECCIÓN: Evitamos que los botones se encojan */
+        button#main-btn { width: 45px; height: 45px; flex-shrink: 0; background: #007bff; color: white; border: none; border-radius: 50%; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; padding: 0; }
+        
         small { display: block; font-size: 11px; color: #88ccff; margin-bottom: 4px; font-weight: bold; }
         #file-input { display: none; }
-        .btn-icon { background: none; border: none; color: #007bff; font-size: 1.2rem; cursor: pointer; padding: 5px; transition: 0.2s; }
+        
+        .btn-icon { background: none; border: none; color: #007bff; font-size: 1.2rem; cursor: pointer; padding: 5px; transition: 0.2s; flex-shrink: 0; }
         .btn-icon:hover { color: #fff; }
 
         /* Estilo específico para el audio */
@@ -79,7 +83,7 @@
         <h1 style="color: #007bff; font-size: 2.5rem; margin: 0;">UrriChat</h1>
         <p style="color: #666;">Tu chat favorito</p>
         <input type="text" id="username" placeholder="Introduce tu nombre de usuario...">
-        <button id="main-btn" onclick="registrarUsuario()">Conectar <i class="fas fa-arrow-right"></i></button>
+        <button id="login-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 25px; font-weight: bold; cursor: pointer;" onclick="registrarUsuario()">Conectar <i class="fas fa-arrow-right"></i></button>
     </div>
 
     <div id="contacts-container">
@@ -125,7 +129,7 @@
             <button class="btn-icon" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip"></i></button>
             <button class="btn-icon" id="mic-btn" onclick="toggleAudio()"><i class="fas fa-microphone"></i></button>
             <input type="text" id="msg-input" placeholder="Escribe tu mensaje..." onkeypress="if(event.key==='Enter') enviar()">
-            <button id="main-btn" onclick="enviar()" style="width: 45px; height: 45px; border-radius: 50%; padding: 0;">
+            <button id="main-btn" onclick="enviar()">
                 <i class="fas fa-paper-plane"></i>
             </button>
         </div>
@@ -147,7 +151,6 @@
         let usuarioActual = "";
         let salaActual = "";
 
-        // Variables para Audio
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
@@ -269,7 +272,6 @@
             input.value = "";
         }
 
-        // FUNCIONES DE AUDIO AÑADIDAS
         async function toggleAudio() {
             const micBtn = document.getElementById('mic-btn');
             if (!isRecording) {
