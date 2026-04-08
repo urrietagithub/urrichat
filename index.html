@@ -261,9 +261,11 @@
             document.getElementById('login').style.display = 'none';
             document.getElementById('mi-perfil').innerText = "● " + user;
             escucharUsuarios();
-            if (ultimaSala && ultimaSala !== "contacts") abrirChat(ultimaSala, ultimoTitulo || "Chat");
-            else {
+            if (ultimaSala && ultimaSala !== "contacts") {
+                abrirChat(ultimaSala, ultimoTitulo || "Chat");
+            } else {
                 document.getElementById('contacts-container').style.display = 'flex';
+                document.getElementById('chat-container').style.display = 'none';
                 localStorage.setItem('urrichat_last_room', 'contacts');
             }
         }
@@ -504,12 +506,20 @@
 
         function scrollToBottom() { const b = document.getElementById("messages"); b.scrollTop = b.scrollHeight; }
         function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; }
-        function volverAContactos() { if(salaActual) db.ref(`typing/${salaActual}`).off(); salaActual = ""; document.getElementById('chat-container').style.display = 'none'; document.getElementById('contacts-container').style.display = 'flex'; }
+        
+        function volverAContactos() { 
+            if(salaActual) db.ref(`typing/${salaActual}`).off(); 
+            salaActual = ""; 
+            localStorage.setItem('urrichat_last_room', 'contacts');
+            document.getElementById('chat-container').style.display = 'none'; 
+            document.getElementById('contacts-container').style.display = 'flex'; 
+        }
+
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
         function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='grid'?'none':'grid'; }
         function addEmoji(e) { document.getElementById('msg-input').value += e; cerrarSelectores(); }
         function vaciarChat() { if(confirm("¿Vaciar chat?")) db.ref(salaActual).remove(); }
-        function confirmarSalida() { if (confirm("¿Cerrar sesión?")) { db.ref("usuarios/" + usuarioActual).set("offline"); localStorage.removeItem('urrichat_user'); location.reload(); } }
+        function confirmarSalida() { if (confirm("¿Cerrar sesión?")) { db.ref("usuarios/" + usuarioActual).set("offline"); localStorage.removeItem('urrichat_user'); localStorage.removeItem('urrichat_last_room'); location.reload(); } }
 
         function editarNombre() {
             let n = prompt("Nuevo nombre:", usuarioActual);
