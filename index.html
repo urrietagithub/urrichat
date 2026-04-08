@@ -328,7 +328,11 @@
                     const d = child.val();
                     const key = child.key;
                     const esMio = d.u === usuarioActual;
-                    if(!esMio && !d.r) db.ref(`${salaActual}/${key}/r`).set(true);
+                    
+                    // CORRECCIÓN: Solo actualizar si el estado cambia realmente
+                    if(!esMio && d.r === false) {
+                        db.ref(`${salaActual}/${key}/r`).set(true);
+                    }
 
                     const divContainer = document.createElement("div");
                     divContainer.className = `msg-container ${esMio?'me':'other'}`;
@@ -506,7 +510,7 @@
 
         function scrollToBottom() { const b = document.getElementById("messages"); b.scrollTop = b.scrollHeight; }
         function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; }
-        
+
         function volverAContactos() { 
             if(salaActual) db.ref(`typing/${salaActual}`).off(); 
             salaActual = ""; 
