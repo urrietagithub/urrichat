@@ -323,26 +323,17 @@
             db.ref(salaActual).off(); 
             db.ref(salaActual).on("value", (snap) => {
                 const box = document.getElementById("messages");
-                box.innerHTML = "";
+                let htmlContent = ""; // Acumulamos el HTML para renderizar todo de una vez
+
                 snap.forEach(child => {
                     const d = child.val();
                     const key = child.key;
                     const esMio = d.u === usuarioActual;
-                    
-                    // CORRECCIÓN: Solo actualizar si el estado cambia realmente
+
+                    // CORRECCIÓN CLAVE: Solo actualizar si el estado cambia realmente para evitar bucles
                     if(!esMio && d.r === false) {
                         db.ref(`${salaActual}/${key}/r`).set(true);
                     }
-
-                    const divContainer = document.createElement("div");
-                    divContainer.className = `msg-container ${esMio?'me':'other'}`;
-                    divContainer.id = "cont-" + key;
-
-                    divContainer.onmousedown = (e) => startPress(e, key);
-                    divContainer.onmouseup = () => clearPress();
-                    divContainer.ontouchstart = (e) => startPress(e, key);
-                    divContainer.ontouchend = () => clearPress();
-                    divContainer.onclick = () => manejarClickMensaje(key);
 
                     let replyHtml = "";
                     if(d.reply) {
@@ -367,14 +358,23 @@
                         content += `</div>`;
                     }
 
-                    divContainer.innerHTML = `
-                        <div class="msg ${esMio?'me':'other'}" ondblclick="reaccionar(event,'${key}')">
-                            ${content}
-                            <div class="status-info">${d.h} ${esMio?(d.r?'<i class="fas fa-check-double" style="color:#88ccff"></i>':'<i class="fas fa-check"></i>'):''}</div>
+                    // Construimos el contenedor como string para mayor velocidad y evitar duplicados
+                    const isSelected = mensajesSeleccionados.includes(key) ? 'selected' : '';
+                    htmlContent += `
+                        <div class="msg-container ${esMio?'me':'other'} ${isSelected}" id="cont-${key}" 
+                             onclick="manejarClickMensaje('${key}')" 
+                             onmousedown="startPress(event, '${key}')" 
+                             onmouseup="clearPress()" 
+                             ontouchstart="startPress(event, '${key}')" 
+                             ontouchend="clearPress()">
+                            <div class="msg ${esMio?'me':'other'}" ondblclick="reaccionar(event,'${key}')">
+                                ${content}
+                                <div class="status-info">${d.h} ${esMio?(d.r?'<i class="fas fa-check-double" style="color:#88ccff"></i>':'<i class="fas fa-check"></i>'):''}</div>
+                            </div>
                         </div>`;
-
-                    box.appendChild(divContainer);
                 });
+
+                box.innerHTML = htmlContent;
                 scrollToBottom();
             });
         }
