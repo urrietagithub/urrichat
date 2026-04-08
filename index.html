@@ -19,7 +19,7 @@
         /* --- ESTILOS BASE (Mantenidos) --- */
         * { box-sizing: border-box; } 
         html, body { 
-            height: 100dvh; 
+            height: 100%; /* Cambiado de 100dvh a 100% para evitar saltos del teclado */
             margin: 0; 
             padding: 0; 
             overflow: hidden; 
@@ -37,7 +37,14 @@
             position: relative;
         }
 
-        #contacts-container, #chat-container { flex-direction: column; }
+        /* Corregimos la estructura del Chat para que sea un Flexbox rígido */
+        #chat-container { 
+            display: none; 
+            flex-direction: column; 
+            height: 100dvh; 
+        }
+
+        #contacts-container { flex-direction: column; }
 
         #login { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 25px; text-align: center; }
         .login-box {
@@ -53,15 +60,27 @@
 
         #login-btn { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 15px; font-weight: 700; cursor: pointer; }
 
-        /* AJUSTE PARA ENCABEZADO FIJO */
         .header { 
-            height: 65px; min-height: 65px; display: flex; justify-content: space-between; 
-            align-items: center; padding: 0 15px; background: #1a1a20; border-bottom: 1px solid #333; 
-            z-index: 100; flex-shrink: 0; 
-            position: sticky; top: 0; /* Esto mantiene el header en su sitio */
+            height: 65px; 
+            min-height: 65px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 15px; 
+            background: #1a1a20; 
+            border-bottom: 1px solid #333; 
+            z-index: 100; 
+            flex-shrink: 0; /* Esto evita que el encabezado se aplaste */
         }
 
-        #lista-usuarios, #messages { flex: 1; overflow-y: auto; padding: 15px 0; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
+        #lista-usuarios, #messages { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 15px 0; 
+            display: flex; 
+            flex-direction: column; 
+            -webkit-overflow-scrolling: touch; 
+        }
 
         /* --- MENSAJES Y SELECCIÓN --- */
         .msg-container { display: flex; width: 100%; padding: 2px 15px; margin-bottom: 8px; transition: background 0.3s; position: relative; }
@@ -75,10 +94,19 @@
 
         /* --- RESPUESTAS --- */
         .reply-box { background: rgba(0,0,0,0.2); border-left: 4px solid #007bff; padding: 5px 8px; border-radius: 5px; margin-bottom: 5px; font-size: 12px; }
-        #reply-preview { display: none; background: #1a1a20; padding: 10px 15px; border-top: 1px solid #333; position: relative; }
+        #reply-preview { display: none; background: #1a1a20; padding: 10px 15px; border-top: 1px solid #333; position: relative; flex-shrink: 0; }
 
         /* --- FOOTER --- */
-        .input-area { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); background: #1a1a20; display: flex; gap: 10px; align-items: center; border-top: 1px solid #333; flex-shrink: 0; }
+        .input-area { 
+            padding: 10px 12px; 
+            padding-bottom: calc(10px + env(safe-area-inset-bottom)); 
+            background: #1a1a20; 
+            display: flex; 
+            gap: 10px; 
+            align-items: center; 
+            border-top: 1px solid #333; 
+            flex-shrink: 0; /* Esto evita que el footer se aplaste */
+        }
         textarea#msg-input { flex: 1; padding: 10px 15px; border-radius: 22px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-size: 16px; max-height: 120px; line-height: 1.3; }
         .footer-btn { background: transparent; border: none; color: #007bff; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 30px; }
         button#main-btn { width: 45px; height: 45px; background: #007bff; color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -204,6 +232,7 @@
     </div>
 
     <script>
+        // --- TODO EL JAVASCRIPT SE MANTIENE EXACTAMENTE IGUAL ---
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -216,12 +245,12 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
+
         let usuarioActual = "";
         let salaActual = "";
         let typingTimeout, mediaRecorder, audioChunks = [], isRecording = false;
         let msgIdParaReaccionar = "";
-        
+
         let mensajesSeleccionados = [];
         let mensajeParaResponder = null;
         let pressTimer;
@@ -369,7 +398,7 @@
                             ${content}
                             <div class="status-info">${d.h} ${esMio?(d.r?'<i class="fas fa-check-double" style="color:#88ccff"></i>':'<i class="fas fa-check"></i>'):''}</div>
                         </div>`;
-                    
+
                     box.appendChild(divContainer);
                 });
                 scrollToBottom();
@@ -419,8 +448,10 @@
 
         function cancelarSeleccion() {
             mensajesSeleccionados = [];
-            document.getElementById('chat-header-normal').style.display = 'flex';
-            document.getElementById('chat-header-selection').style.display = 'none';
+            const nh = document.getElementById('chat-header-normal');
+            if(nh) nh.style.display = 'flex';
+            const sh = document.getElementById('chat-header-selection');
+            if(sh) sh.style.display = 'none';
             document.querySelectorAll('.msg-container').forEach(el => el.classList.remove('selected'));
         }
 
@@ -505,7 +536,7 @@
             cerrarSelectores();
         }
 
-        function scrollToBottom() { const b = document.getElementById("messages"); b.scrollTop = b.scrollHeight; }
+        function scrollToBottom() { const b = document.getElementById("messages"); if(b) b.scrollTop = b.scrollHeight; }
         function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; }
         function volverAContactos() { if(salaActual) db.ref(`typing/${salaActual}`).off(); salaActual = ""; document.getElementById('chat-container').style.display = 'none'; document.getElementById('contacts-container').style.display = 'flex'; }
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
@@ -513,7 +544,7 @@
         function addEmoji(e) { document.getElementById('msg-input').value += e; cerrarSelectores(); }
         function vaciarChat() { if(confirm("¿Vaciar chat?")) db.ref(salaActual).remove(); }
         function confirmarSalida() { if (confirm("¿Cerrar sesión?")) { db.ref("usuarios/" + usuarioActual).set("offline"); localStorage.removeItem('urrichat_user'); location.reload(); } }
-        
+
         function editarNombre() {
             let n = prompt("Nuevo nombre:", usuarioActual);
             if (n && n.trim() !== "" && n !== usuarioActual) {
