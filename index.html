@@ -16,7 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        /* --- ESTILOS BASE --- */
+        /* --- TUS ESTILOS ORIGINALES (SIN CAMBIOS) --- */
         * { box-sizing: border-box; } 
         html, body { 
             height: 100dvh; 
@@ -78,7 +78,7 @@
         button#main-btn { width: 45px; height: 45px; background: #007bff; color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
         .contact-card { background: #1a1a20; padding: 15px; margin: 10px; border-radius: 12px; border: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
-        .unread-badge { background: #007bff; color: white; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: bold; margin-right: 12px; min-width: 20px; text-align: center; }
+        .unread-badge { background: #007bff; color: white; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: bold; margin-right: 12px; }
         .online-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
         .dot-online { background-color: #2ecc71; }
         .dot-offline { background-color: #ff4444; }
@@ -86,7 +86,7 @@
         #reaction-selector { display: none; position: fixed; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; z-index: 2000; grid-template-columns: repeat(5, 1fr); gap: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.9); }
         .emoji-item { cursor: pointer; font-size: 1.3rem; text-align: center; }
         .emoji-picker { display: none; position: absolute; bottom: 75px; left: 10px; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 15px; grid-template-columns: repeat(5, 1fr); gap: 8px; z-index: 100; }
-        .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 10px; opacity: 0.7; white-space: nowrap; }
+        .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; font-size: 10px; opacity: 0.7; }
         .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 10px; border-radius: 8px; font-size: 14px; }
         #scroll-down { position: fixed; bottom: 90px; right: 20px; background: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; z-index: 90; }
         .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
@@ -214,26 +214,10 @@
         let salaActual = "";
         let typingTimeout, mediaRecorder, audioChunks = [], isRecording = false;
         let msgIdParaReaccionar = "";
+
         let mensajesSeleccionados = [];
         let mensajeParaResponder = null;
         let pressTimer;
-
-        // Función para formatear fecha de mensajes
-        function formatearFecha(timestamp) {
-            const date = new Date(timestamp);
-            const today = new Date();
-            const yesterday = new Date();
-            yesterday.setDate(today.getDate() - 1);
-
-            const optionsTime = { hour: '2-digit', minute: '2-digit' };
-            const timeStr = date.toLocaleTimeString([], optionsTime);
-
-            if (date.toDateString() === today.toDateString()) return timeStr;
-            if (date.toDateString() === yesterday.toDateString()) return `Ayer ${timeStr}`;
-            
-            const optionsDate = { day: 'numeric', month: 'short' };
-            return `${date.toLocaleDateString([], optionsDate)} ${timeStr}`;
-        }
 
         function autoResize(textarea) {
             textarea.style.height = 'auto';
@@ -301,15 +285,18 @@
             verificarMensajesNuevos('muro');
         }
 
+        // --- MEJORA 1: ACTUALIZACIÓN EN TIEMPO REAL DEL CONTADOR ---
         function verificarMensajesNuevos(id) {
             db.ref(id).on("value", (snap) => {
                 const b = document.getElementById(`badge-${id}`);
                 if (!b) return;
+                // Si estoy viendo el chat, no mostramos badge
                 if (salaActual === id) { b.innerHTML = ""; return; }
+                
                 let c = 0; 
                 snap.forEach(m => { 
-                    const msg = m.val();
-                    if(msg.u !== usuarioActual && msg.r === false) c++; 
+                    // Contamos solo los que NO enviamos nosotros y NO han sido leídos (r: false)
+                    if(m.val().u !== usuarioActual && m.val().r === false) c++; 
                 });
                 b.innerHTML = c > 0 ? `<span class="unread-badge">${c}</span>` : "";
             });
@@ -325,10 +312,10 @@
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = title;
             
-            // Limpiar badge localmente al entrar
+            // Limpiamos el badge visualmente al entrar
             const b = document.getElementById(`badge-${id}`);
             if(b) b.innerHTML = "";
-            
+
             escucharMensajes();
             escucharEscritura();
         }
@@ -345,14 +332,15 @@
             db.ref(salaActual).off(); 
             db.ref(salaActual).on("value", (snap) => {
                 const box = document.getElementById("messages");
-                let htmlContent = "";
+                let htmlContent = ""; 
+                const hoy = new Date().toLocaleDateString();
 
                 snap.forEach(child => {
                     const d = child.val();
                     const key = child.key;
                     const esMio = d.u === usuarioActual;
 
-                    // Marcar como leído si es de otro y estamos en la sala
+                    // Marcar como leído si es de otro (SOLO si estamos en la sala)
                     if(!esMio && d.r === false) {
                         db.ref(`${salaActual}/${key}/r`).set(true);
                     }
@@ -380,9 +368,14 @@
                         content += `</div>`;
                     }
 
-                    const isSelected = mensajesSeleccionados.includes(key) ? 'selected' : '';
-                    const fechaMostrar = formatearFecha(d.ts || Date.now());
+                    // --- MEJORA 2: DETECCIÓN DE FECHA ---
+                    // Si el mensaje tiene 'date' y no es hoy, lo mostramos. Si no tiene date, solo la hora 'h'.
+                    let labelHora = d.h;
+                    if(d.date && d.date !== hoy) {
+                        labelHora = d.date.split("/").slice(0,2).join("/") + " " + d.h;
+                    }
 
+                    const isSelected = mensajesSeleccionados.includes(key) ? 'selected' : '';
                     htmlContent += `
                         <div class="msg-container ${esMio?'me':'other'} ${isSelected}" id="cont-${key}" 
                              onclick="manejarClickMensaje('${key}')" 
@@ -392,7 +385,7 @@
                              ontouchend="clearPress()">
                             <div class="msg ${esMio?'me':'other'}" ondblclick="reaccionar(event,'${key}')">
                                 ${content}
-                                <div class="status-info">${fechaMostrar} ${esMio?(d.r?'<i class="fas fa-check-double" style="color:#88ccff"></i>':'<i class="fas fa-check"></i>'):''}</div>
+                                <div class="status-info">${labelHora} ${esMio?(d.r?'<i class="fas fa-check-double" style="color:#88ccff"></i>':'<i class="fas fa-check"></i>'):''}</div>
                             </div>
                         </div>`;
                 });
@@ -478,13 +471,10 @@
         function enviar() {
             const i = document.getElementById('msg-input');
             if (i.value.trim() && salaActual) {
-                const now = Date.now();
-                const msgData = { 
-                    u: usuarioActual, 
-                    t: i.value, 
-                    ts: now, // Marca de tiempo real
-                    r: false 
-                };
+                const now = new Date();
+                const h = now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0');
+                const date = now.toLocaleDateString(); // "DD/MM/YYYY"
+                const msgData = { u: usuarioActual, t: i.value, h: h, date: date, r: false };
                 if (mensajeParaResponder) msgData.reply = mensajeParaResponder;
                 db.ref(salaActual).push(msgData);
                 i.value = ""; i.style.height = 'auto';
@@ -506,8 +496,10 @@
                         const reader = new FileReader();
                         reader.readAsDataURL(blob);
                         reader.onloadend = () => {
-                            const now = Date.now();
-                            const msgData = { u: usuarioActual, file: reader.result, fileType: 'audio', ts: now, r: false };
+                            const now = new Date();
+                            const h = now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0');
+                            const date = now.toLocaleDateString();
+                            const msgData = { u: usuarioActual, file: reader.result, fileType: 'audio', h: h, date: date, r: false };
                             if(mensajeParaResponder) msgData.reply = mensajeParaResponder;
                             db.ref(salaActual).push(msgData);
                             cancelarRespuesta();
@@ -543,7 +535,6 @@
             localStorage.setItem('urrichat_last_room', 'contacts');
             document.getElementById('chat-container').style.display = 'none'; 
             document.getElementById('contacts-container').style.display = 'flex'; 
-            escucharUsuarios(); // Refrescar lista al volver
         }
 
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
@@ -569,8 +560,10 @@
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = () => {
-                    const now = Date.now();
-                    const msgData = { u: usuarioActual, file: reader.result, fileType: file.type, ts: now, r: false };
+                    const now = new Date();
+                    const h = now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0');
+                    const date = now.toLocaleDateString();
+                    const msgData = { u: usuarioActual, file: reader.result, fileType: file.type, h: h, date: date, r: false };
                     if(mensajeParaResponder) msgData.reply = mensajeParaResponder;
                     db.ref(salaActual).push(msgData);
                     cancelarRespuesta();
