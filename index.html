@@ -271,6 +271,8 @@
         }
 
         function escucharUsuarios() {
+            // Limpiar listeners previos para evitar duplicados
+            db.ref("usuarios").off();
             db.ref("usuarios").on("value", (snap) => {
                 const list = document.getElementById("usuarios-conectados");
                 list.innerHTML = "";
@@ -290,10 +292,19 @@
         }
 
         function verificarMensajesNuevos(id) {
+            db.ref(id).off(); // Limpiar listener antes de crear uno nuevo
             db.ref(id).on("value", (snap) => {
                 const b = document.getElementById(`badge-${id}`);
-                if (!b || salaActual === id) return;
-                let c = 0; snap.forEach(m => { if(m.val().u !== usuarioActual && !m.val().r) c++; });
+                if (!b) return;
+                // Si estamos dentro de esta sala, el badge debe estar vacío
+                if (salaActual === id) {
+                    b.innerHTML = "";
+                    return;
+                }
+                let c = 0; 
+                snap.forEach(m => { 
+                    if(m.val().u !== usuarioActual && m.val().r === false) c++; 
+                });
                 b.innerHTML = c > 0 ? `<span class="unread-badge">${c}</span>` : "";
             });
         }
@@ -307,6 +318,11 @@
             document.getElementById('contacts-container').style.display = 'none';
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = title;
+            
+            // Al entrar al chat, limpiamos el badge visualmente de inmediato
+            const b = document.getElementById(`badge-${id}`);
+            if(b) b.innerHTML = "";
+            
             escucharMensajes();
             escucharEscritura();
         }
@@ -323,14 +339,14 @@
             db.ref(salaActual).off(); 
             db.ref(salaActual).on("value", (snap) => {
                 const box = document.getElementById("messages");
-                let htmlContent = ""; // Acumulamos el HTML para renderizar todo de una vez
+                let htmlContent = "";
 
                 snap.forEach(child => {
                     const d = child.val();
                     const key = child.key;
                     const esMio = d.u === usuarioActual;
 
-                    // CORRECCIÓN CLAVE: Solo actualizar si el estado cambia realmente para evitar bucles
+                    // Marcar como leído si el mensaje es del otro
                     if(!esMio && d.r === false) {
                         db.ref(`${salaActual}/${key}/r`).set(true);
                     }
@@ -358,7 +374,6 @@
                         content += `</div>`;
                     }
 
-                    // Construimos el contenedor como string para mayor velocidad y evitar duplicados
                     const isSelected = mensajesSeleccionados.includes(key) ? 'selected' : '';
                     htmlContent += `
                         <div class="msg-container ${esMio?'me':'other'} ${isSelected}" id="cont-${key}" 
@@ -512,11 +527,16 @@
         function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; }
 
         function volverAContactos() { 
-            if(salaActual) db.ref(`typing/${salaActual}`).off(); 
+            if(salaActual) {
+                db.ref(`typing/${salaActual}`).off(); 
+                db.ref(salaActual).off(); // Dejar de escuchar el chat actual
+            }
             salaActual = ""; 
             localStorage.setItem('urrichat_last_room', 'contacts');
             document.getElementById('chat-container').style.display = 'none'; 
             document.getElementById('contacts-container').style.display = 'flex'; 
+            // Forzar el refresco de los contadores al volver
+            escucharUsuarios(); 
         }
 
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
