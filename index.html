@@ -271,7 +271,6 @@
         }
 
         function escucharUsuarios() {
-            db.ref("usuarios").off();
             db.ref("usuarios").on("value", (snap) => {
                 const list = document.getElementById("usuarios-conectados");
                 list.innerHTML = "";
@@ -280,7 +279,6 @@
                         const salaID = "privado_" + [usuarioActual, child.key].sort().join("_");
                         const card = document.createElement("div");
                         card.className = "contact-card";
-                        card.id = "card-" + salaID;
                         card.innerHTML = `<span><i class="fas fa-user" style="margin-right:10px; color: #007bff;"></i>${child.key}</span><div style="display:flex;align-items:center"><span id="badge-${salaID}"></span><span class="online-dot ${child.val()==='online'?'dot-online':'dot-offline'}"></span></div>`;
                         card.onclick = () => abrirChat(salaID, child.key);
                         list.appendChild(card);
@@ -292,13 +290,10 @@
         }
 
         function verificarMensajesNuevos(id) {
-            db.ref(id).off("value");
             db.ref(id).on("value", (snap) => {
                 const b = document.getElementById(`badge-${id}`);
-                if (!b) return;
-                if (salaActual === id) { b.innerHTML = ""; return; }
-                let c = 0; 
-                snap.forEach(m => { if(m.val().u !== usuarioActual && m.val().r === false) c++; });
+                if (!b || salaActual === id) return;
+                let c = 0; snap.forEach(m => { if(m.val().u !== usuarioActual && !m.val().r) c++; });
                 b.innerHTML = c > 0 ? `<span class="unread-badge">${c}</span>` : "";
             });
         }
@@ -328,16 +323,16 @@
             db.ref(salaActual).off(); 
             db.ref(salaActual).on("value", (snap) => {
                 const box = document.getElementById("messages");
-                let htmlContent = "";
+                let htmlContent = ""; // Acumulamos el HTML para renderizar todo de una vez
 
                 snap.forEach(child => {
                     const d = child.val();
                     const key = child.key;
                     const esMio = d.u === usuarioActual;
 
-                    // Marcamos como leído si no lo está y el chat está abierto
+                    // CORRECCIÓN CLAVE: Solo actualizar si el estado cambia realmente para evitar bucles
                     if(!esMio && d.r === false) {
-                        db.ref(`${salaActual}/${key}`).update({r: true});
+                        db.ref(`${salaActual}/${key}/r`).set(true);
                     }
 
                     let replyHtml = "";
@@ -363,6 +358,7 @@
                         content += `</div>`;
                     }
 
+                    // Construimos el contenedor como string para mayor velocidad y evitar duplicados
                     const isSelected = mensajesSeleccionados.includes(key) ? 'selected' : '';
                     htmlContent += `
                         <div class="msg-container ${esMio?'me':'other'} ${isSelected}" id="cont-${key}" 
@@ -516,23 +512,11 @@
         function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; }
 
         function volverAContactos() { 
-            if(salaActual) {
-                db.ref(`typing/${salaActual}`).off(); 
-                db.ref(salaActual).off(); 
-            }
-            // Importante: Reiniciar variables antes de volver
-            const tempSala = salaActual;
+            if(salaActual) db.ref(`typing/${salaActual}`).off(); 
             salaActual = ""; 
-            
             localStorage.setItem('urrichat_last_room', 'contacts');
             document.getElementById('chat-container').style.display = 'none'; 
             document.getElementById('contacts-container').style.display = 'flex'; 
-            
-            // Limpiar badge visualmente antes del refresco
-            const b = document.getElementById(`badge-${tempSala}`);
-            if(b) b.innerHTML = "";
-            
-            escucharUsuarios(); 
         }
 
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
