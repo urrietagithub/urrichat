@@ -91,6 +91,9 @@
         #scroll-down { position: fixed; bottom: 90px; right: 20px; background: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; z-index: 90; }
         .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
+        /* Nuevo estilo para el estado en el header */
+        #header-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
     </style>
 </head>
 <body onclick="cerrarSelectores()">
@@ -132,6 +135,10 @@
             <button class="btn-header" onclick="volverAContactos()"><i class="fas fa-chevron-left"></i></button>
             <div style="text-align: center;">
                 <span id="chat-title" style="font-weight: bold; display: block;">Chat</span>
+                <div id="chat-header-status" style="font-size: 10px; display: flex; align-items: center; justify-content: center; gap: 2px;">
+                    <span id="header-status-dot"></span>
+                    <span id="header-status-text"></span>
+                </div>
                 <span id="chat-subtitle" style="font-size: 10px; color: #2ecc71; display: none;">Escribiendo...</span>
             </div>
             <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="vaciarChat()"><i class="fas fa-trash-alt"></i></button>
@@ -250,7 +257,6 @@
             usuarioActual = user;
             localStorage.setItem('urrichat_user', user);
             
-            // Gestión de Presencia Mejorada
             const userRef = db.ref("usuarios/" + user);
             userRef.set("online");
             userRef.onDisconnect().set("offline");
@@ -294,35 +300,61 @@
             db.ref(id).on("value", (snap) => {
                 const b = document.getElementById(`badge-${id}`);
                 if (!b) return;
-                
-                // Si estamos en la sala actual, forzamos el badge a vacío
-                if (salaActual === id) {
-                    b.innerHTML = "";
-                    return;
-                }
-
+                if (salaActual === id) { b.innerHTML = ""; return; }
                 let c = 0; 
-                snap.forEach(m => { 
-                    if(m.val().u !== usuarioActual && m.val().r === false) c++; 
-                });
+                snap.forEach(m => { if(m.val().u !== usuarioActual && m.val().r === false) c++; });
                 b.innerHTML = c > 0 ? `<span class="unread-badge">${c}</span>` : "";
             });
         }
 
+        // --- NUEVA FUNCIÓN PARA MONITOREAR ESTADO EN EL HEADER ---
+        function monitorearEstadoChat(nombreUsuario) {
+            const statusContainer = document.getElementById('chat-header-status');
+            const dot = document.getElementById('header-status-dot');
+            const text = document.getElementById('header-status-text');
+
+            if (salaActual === 'muro') {
+                statusContainer.style.display = 'none';
+                return;
+            }
+
+            statusContainer.style.display = 'flex';
+            db.ref("usuarios/" + nombreUsuario).on("value", (snap) => {
+                const status = snap.val();
+                if (status === 'online') {
+                    dot.className = 'dot-online';
+                    text.innerText = 'en línea';
+                    text.style.color = '#2ecc71';
+                } else {
+                    dot.className = 'dot-offline';
+                    text.innerText = 'desconectado';
+                    text.style.color = '#ff4444';
+                }
+            });
+        }
+
         function abrirChat(id, title) {
+            // Limpiar listener de estado anterior si existe
+            if (salaActual !== 'muro' && salaActual !== '') {
+                const nombreAnterior = document.getElementById('chat-title').innerText;
+                db.ref("usuarios/" + nombreAnterior).off();
+            }
+
             salaActual = id;
             cancelarSeleccion();
             cancelarRespuesta();
             localStorage.setItem('urrichat_last_room', id);
             localStorage.setItem('urrichat_last_title', title);
             
-            // Limpiar badge visualmente de inmediato
             const b = document.getElementById(`badge-${id}`);
             if(b) b.innerHTML = "";
 
             document.getElementById('contacts-container').style.display = 'none';
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = title;
+            
+            // Iniciar monitoreo de estado para chats privados
+            monitorearEstadoChat(title);
             
             escucharMensajes();
             escucharEscritura();
@@ -333,6 +365,8 @@
                 let alguienEscribiendo = false;
                 snap.forEach(child => { if (child.key !== usuarioActual && child.val() === true) alguienEscribiendo = true; });
                 document.getElementById('chat-subtitle').style.display = alguienEscribiendo ? 'block' : 'none';
+                // Ocultamos el estado de "en linea" si está escribiendo para no amontonar
+                document.getElementById('chat-header-status').style.display = alguienEscribiendo ? 'none' : (salaActual === 'muro' ? 'none' : 'flex');
             });
         }
 
@@ -341,17 +375,11 @@
             db.ref(salaActual).on("value", (snap) => {
                 const box = document.getElementById("messages");
                 let htmlContent = "";
-
                 snap.forEach(child => {
                     const d = child.val();
                     const key = child.key;
                     const esMio = d.u === usuarioActual;
-
-                    // MARCAR COMO LEÍDO EN TIEMPO REAL
-                    if(!esMio && d.r === false && salaActual !== "") {
-                        db.ref(`${salaActual}/${key}/r`).set(true);
-                    }
-
+                    if(!esMio && d.r === false && salaActual !== "") { db.ref(`${salaActual}/${key}/r`).set(true); }
                     let replyHtml = "";
                     if(d.reply) {
                         replyHtml = `<div class="reply-box" style="border-left-color: ${esMio?'#fff':'#007bff'}">
@@ -359,7 +387,6 @@
                                         <small>${d.reply.t || 'Archivo'}</small>
                                     </div>`;
                     }
-
                     let content = !esMio ? `<small style="color:#888; font-weight:bold; font-size:11px; margin-bottom:4px; display:block;">${d.u}</small>` : "";
                     content += replyHtml;
                     if(d.t) content += `<span>${d.t}</span>`;
@@ -368,13 +395,11 @@
                         else if(d.fileType?.includes("audio")) content += `<audio controls src="${d.file}" style="width:200px; height:35px; margin-top:5px; display:block;"></audio>`;
                         else content += `<a href="${d.file}" style="color:white; font-size:12px; margin-top:5px; display:block;">Archivo</a>`;
                     }
-
                     if(d.reacciones) {
                         content += `<div style="display:flex;gap:4px;margin-top:5px">`;
                         for(let e in d.reacciones) content += `<span style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:10px;font-size:11px">${e} ${d.reacciones[e]}</span>`;
                         content += `</div>`;
                     }
-
                     const isSelected = mensajesSeleccionados.includes(key) ? 'selected' : '';
                     htmlContent += `
                         <div class="msg-container ${esMio?'me':'other'} ${isSelected}" id="cont-${key}" 
@@ -389,7 +414,6 @@
                             </div>
                         </div>`;
                 });
-
                 box.innerHTML = htmlContent;
                 scrollToBottom();
             });
@@ -397,43 +421,20 @@
 
         function startPress(e, key) { pressTimer = setTimeout(() => activarSeleccion(key), 600); }
         function clearPress() { clearTimeout(pressTimer); }
-
-        function activarSeleccion(key) {
-            if (mensajesSeleccionados.length === 0) {
-                mensajesSeleccionados.push(key);
-                actualizarInterfazSeleccion();
-            }
-        }
-
-        function manejarClickMensaje(key) {
-            if (mensajesSeleccionados.length > 0) {
-                if (mensajesSeleccionados.includes(key)) {
-                    mensajesSeleccionados = mensajesSeleccionados.filter(id => id !== key);
-                } else {
-                    mensajesSeleccionados.push(key);
-                }
-                actualizarInterfazSeleccion();
-            }
-        }
-
+        function activarSeleccion(key) { if (mensajesSeleccionados.length === 0) { mensajesSeleccionados.push(key); actualizarInterfazSeleccion(); } }
+        function manejarClickMensaje(key) { if (mensajesSeleccionados.length > 0) { if (mensajesSeleccionados.includes(key)) { mensajesSeleccionados = mensajesSeleccionados.filter(id => id !== key); } else { mensajesSeleccionados.push(key); } actualizarInterfazSeleccion(); } }
         function actualizarInterfazSeleccion() {
             const count = mensajesSeleccionados.length;
             const normalHeader = document.getElementById('chat-header-normal');
             const selectHeader = document.getElementById('chat-header-selection');
             const replyBtn = document.getElementById('reply-btn-header');
-
             if (count > 0) {
                 normalHeader.style.display = 'none';
                 selectHeader.style.display = 'flex';
                 document.getElementById('selection-count').innerText = count;
                 replyBtn.style.display = count === 1 ? 'block' : 'none';
-                document.querySelectorAll('.msg-container').forEach(el => {
-                    const id = el.id.replace('cont-', '');
-                    el.classList.toggle('selected', mensajesSeleccionados.includes(id));
-                });
-            } else {
-                cancelarSeleccion();
-            }
+                document.querySelectorAll('.msg-container').forEach(el => { const id = el.id.replace('cont-', ''); el.classList.toggle('selected', mensajesSeleccionados.includes(id)); });
+            } else { cancelarSeleccion(); }
         }
 
         function cancelarSeleccion() {
@@ -456,18 +457,8 @@
             });
         }
 
-        function cancelarRespuesta() {
-            mensajeParaResponder = null;
-            document.getElementById('reply-preview').style.display = 'none';
-        }
-
-        function borrarMensajesSeleccionados() {
-            if (confirm(`¿Borrar ${mensajesSeleccionados.length} mensaje(s)?`)) {
-                mensajesSeleccionados.forEach(key => { db.ref(`${salaActual}/${key}`).remove(); });
-                cancelarSeleccion();
-            }
-        }
-
+        function cancelarRespuesta() { mensajeParaResponder = null; document.getElementById('reply-preview').style.display = 'none'; }
+        function borrarMensajesSeleccionados() { if (confirm(`¿Borrar ${mensajesSeleccionados.length} mensaje(s)?`)) { mensajesSeleccionados.forEach(key => { db.ref(`${salaActual}/${key}`).remove(); }); cancelarSeleccion(); } }
         function enviar() {
             const i = document.getElementById('msg-input');
             if (i.value.trim() && salaActual) {
@@ -519,18 +510,18 @@
             s.style.left = Math.max(10, Math.min(window.innerWidth-230, e.clientX-100)) + 'px';
         }
 
-        function aplicarReaccion(emoji) {
-            db.ref(`${salaActual}/${msgIdParaReaccionar}/reacciones/${emoji}`).transaction(v => (v || 0) + 1);
-            cerrarSelectores();
-        }
-
+        function aplicarReaccion(emoji) { db.ref(`${salaActual}/${msgIdParaReaccionar}/reacciones/${emoji}`).transaction(v => (v || 0) + 1); cerrarSelectores(); }
         function scrollToBottom() { const b = document.getElementById("messages"); b.scrollTop = b.scrollHeight; }
         function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; }
 
         function volverAContactos() { 
             if(salaActual) {
                 db.ref(`typing/${salaActual}/${usuarioActual}`).set(false);
-                db.ref(`typing/${salaActual}`).off(); 
+                db.ref(`typing/${salaActual}`).off();
+                // Dejar de escuchar el estado del usuario al salir
+                if(salaActual !== 'muro') {
+                    db.ref("usuarios/" + document.getElementById('chat-title').innerText).off();
+                }
             }
             salaActual = ""; 
             localStorage.setItem('urrichat_last_room', 'contacts');
