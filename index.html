@@ -92,7 +92,6 @@
         .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         
-        /* Nuevo estilo para el estado en el header */
         #header-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
     </style>
 </head>
@@ -230,7 +229,7 @@
             textarea.style.height = (textarea.scrollHeight) + 'px';
             if (salaActual) db.ref(`typing/${salaActual}/${usuarioActual}`).set(true);
             clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => db.ref(`typing/${salaActual}/${usuarioActual}`).set(false), 1500);
+            typingTimeout = setTimeout(() => { if(salaActual) db.ref(`typing/${salaActual}/${usuarioActual}`).set(false); }, 1500);
         }
 
         function checkEnter(e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); } }
@@ -280,15 +279,27 @@
         function escucharUsuarios() {
             db.ref("usuarios").on("value", (snap) => {
                 const list = document.getElementById("usuarios-conectados");
-                list.innerHTML = "";
+                const currentUsersInList = Array.from(list.children).map(c => c.getAttribute('data-user'));
+                
                 snap.forEach((child) => {
-                    if (child.key !== usuarioActual) {
-                        const salaID = "privado_" + [usuarioActual, child.key].sort().join("_");
-                        const card = document.createElement("div");
-                        card.className = "contact-card";
-                        card.innerHTML = `<span><i class="fas fa-user" style="margin-right:10px; color: #007bff;"></i>${child.key}</span><div style="display:flex;align-items:center"><span id="badge-${salaID}"></span><span class="online-dot ${child.val()==='online'?'dot-online':'dot-offline'}"></span></div>`;
-                        card.onclick = () => abrirChat(salaID, child.key);
-                        list.appendChild(card);
+                    const uKey = child.key;
+                    if (uKey !== usuarioActual) {
+                        const salaID = "privado_" + [usuarioActual, uKey].sort().join("_");
+                        let card = list.querySelector(`[data-user="${uKey}"]`);
+                        
+                        if (!card) {
+                            card = document.createElement("div");
+                            card.className = "contact-card";
+                            card.setAttribute('data-user', uKey);
+                            card.onclick = () => abrirChat(salaID, uKey);
+                            list.appendChild(card);
+                        }
+                        
+                        card.innerHTML = `<span><i class="fas fa-user" style="margin-right:10px; color: #007bff;"></i>${uKey}</span>
+                                          <div style="display:flex;align-items:center">
+                                            <span id="badge-${salaID}"></span>
+                                            <span class="online-dot ${child.val()==='online'?'dot-online':'dot-offline'}"></span>
+                                          </div>`;
                         verificarMensajesNuevos(salaID);
                     }
                 });
@@ -300,14 +311,24 @@
             db.ref(id).on("value", (snap) => {
                 const b = document.getElementById(`badge-${id}`);
                 if (!b) return;
-                if (salaActual === id) { b.innerHTML = ""; return; }
+                
+                // Si estamos dentro de ESTA sala, marcamos como leído inmediatamente
+                if (salaActual === id) {
+                    b.innerHTML = "";
+                    snap.forEach(m => {
+                        if(m.val().u !== usuarioActual && m.val().r === false) {
+                            db.ref(`${id}/${m.key}/r`).set(true);
+                        }
+                    });
+                    return;
+                }
+                
                 let c = 0; 
                 snap.forEach(m => { if(m.val().u !== usuarioActual && m.val().r === false) c++; });
                 b.innerHTML = c > 0 ? `<span class="unread-badge">${c}</span>` : "";
             });
         }
 
-        // --- NUEVA FUNCIÓN PARA MONITOREAR ESTADO EN EL HEADER ---
         function monitorearEstadoChat(nombreUsuario) {
             const statusContainer = document.getElementById('chat-header-status');
             const dot = document.getElementById('header-status-dot');
@@ -334,11 +355,9 @@
         }
 
         function abrirChat(id, title) {
-            // Limpiar listener de estado anterior si existe
-            if (salaActual !== 'muro' && salaActual !== '') {
-                const nombreAnterior = document.getElementById('chat-title').innerText;
-                db.ref("usuarios/" + nombreAnterior).off();
-            }
+            // Limpiar listener de estado anterior
+            const viejoTitulo = document.getElementById('chat-title').innerText;
+            if (viejoTitulo && viejoTitulo !== 'Chat') db.ref("usuarios/" + viejoTitulo).off();
 
             salaActual = id;
             cancelarSeleccion();
@@ -346,18 +365,16 @@
             localStorage.setItem('urrichat_last_room', id);
             localStorage.setItem('urrichat_last_title', title);
             
-            const b = document.getElementById(`badge-${id}`);
-            if(b) b.innerHTML = "";
-
             document.getElementById('contacts-container').style.display = 'none';
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = title;
             
-            // Iniciar monitoreo de estado para chats privados
             monitorearEstadoChat(title);
-            
             escucharMensajes();
             escucharEscritura();
+            
+            const b = document.getElementById(`badge-${id}`);
+            if(b) b.innerHTML = "";
         }
 
         function escucharEscritura() {
@@ -365,7 +382,6 @@
                 let alguienEscribiendo = false;
                 snap.forEach(child => { if (child.key !== usuarioActual && child.val() === true) alguienEscribiendo = true; });
                 document.getElementById('chat-subtitle').style.display = alguienEscribiendo ? 'block' : 'none';
-                // Ocultamos el estado de "en linea" si está escribiendo para no amontonar
                 document.getElementById('chat-header-status').style.display = alguienEscribiendo ? 'none' : (salaActual === 'muro' ? 'none' : 'flex');
             });
         }
@@ -379,7 +395,10 @@
                     const d = child.val();
                     const key = child.key;
                     const esMio = d.u === usuarioActual;
-                    if(!esMio && d.r === false && salaActual !== "") { db.ref(`${salaActual}/${key}/r`).set(true); }
+                    
+                    // Marcar como leído si el mensaje es del otro
+                    if(!esMio && d.r === false) { db.ref(`${salaActual}/${key}/r`).set(true); }
+                    
                     let replyHtml = "";
                     if(d.reply) {
                         replyHtml = `<div class="reply-box" style="border-left-color: ${esMio?'#fff':'#007bff'}">
@@ -423,6 +442,7 @@
         function clearPress() { clearTimeout(pressTimer); }
         function activarSeleccion(key) { if (mensajesSeleccionados.length === 0) { mensajesSeleccionados.push(key); actualizarInterfazSeleccion(); } }
         function manejarClickMensaje(key) { if (mensajesSeleccionados.length > 0) { if (mensajesSeleccionados.includes(key)) { mensajesSeleccionados = mensajesSeleccionados.filter(id => id !== key); } else { mensajesSeleccionados.push(key); } actualizarInterfazSeleccion(); } }
+        
         function actualizarInterfazSeleccion() {
             const count = mensajesSeleccionados.length;
             const normalHeader = document.getElementById('chat-header-normal');
@@ -458,7 +478,14 @@
         }
 
         function cancelarRespuesta() { mensajeParaResponder = null; document.getElementById('reply-preview').style.display = 'none'; }
-        function borrarMensajesSeleccionados() { if (confirm(`¿Borrar ${mensajesSeleccionados.length} mensaje(s)?`)) { mensajesSeleccionados.forEach(key => { db.ref(`${salaActual}/${key}`).remove(); }); cancelarSeleccion(); } }
+        
+        function borrarMensajesSeleccionados() { 
+            if (confirm(`¿Borrar ${mensajesSeleccionados.length} mensaje(s)?`)) { 
+                mensajesSeleccionados.forEach(key => { db.ref(`${salaActual}/${key}`).remove(); }); 
+                cancelarSeleccion(); 
+            } 
+        }
+
         function enviar() {
             const i = document.getElementById('msg-input');
             if (i.value.trim() && salaActual) {
@@ -497,7 +524,7 @@
                     };
                     mediaRecorder.start();
                     isRecording = true; btn.classList.add('recording');
-                } catch (err) { alert("Error de micrófono"); }
+                } catch (err) { alert("Permiso de micrófono denegado."); }
             } else { mediaRecorder.stop(); isRecording = false; btn.classList.remove('recording'); }
         }
 
@@ -511,17 +538,22 @@
         }
 
         function aplicarReaccion(emoji) { db.ref(`${salaActual}/${msgIdParaReaccionar}/reacciones/${emoji}`).transaction(v => (v || 0) + 1); cerrarSelectores(); }
-        function scrollToBottom() { const b = document.getElementById("messages"); b.scrollTop = b.scrollHeight; }
-        function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; }
+        
+        function scrollToBottom() { 
+            const b = document.getElementById("messages"); 
+            b.scrollTop = b.scrollHeight; 
+        }
+        
+        function handleScroll(el) { 
+            document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; 
+        }
 
         function volverAContactos() { 
             if(salaActual) {
                 db.ref(`typing/${salaActual}/${usuarioActual}`).set(false);
                 db.ref(`typing/${salaActual}`).off();
-                // Dejar de escuchar el estado del usuario al salir
-                if(salaActual !== 'muro') {
-                    db.ref("usuarios/" + document.getElementById('chat-title').innerText).off();
-                }
+                const titulo = document.getElementById('chat-title').innerText;
+                if(titulo !== 'Chat') db.ref("usuarios/" + titulo).off();
             }
             salaActual = ""; 
             localStorage.setItem('urrichat_last_room', 'contacts');
@@ -537,8 +569,7 @@
         function confirmarSalida() { 
             if (confirm("¿Cerrar sesión?")) { 
                 db.ref("usuarios/" + usuarioActual).set("offline"); 
-                localStorage.removeItem('urrichat_user'); 
-                localStorage.removeItem('urrichat_last_room'); 
+                localStorage.clear(); 
                 location.reload(); 
             } 
         }
@@ -552,6 +583,7 @@
                 db.ref("usuarios/" + usuarioActual).set("online");
                 db.ref("usuarios/" + usuarioActual).onDisconnect().set("offline");
                 document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
+                location.reload();
             }
         }
 
@@ -573,7 +605,10 @@
 
         window.onload = () => { 
             const saved = localStorage.getItem('urrichat_user');
-            if(saved) { document.getElementById('username').value = saved; registrarUsuario(saved); }
+            if(saved) { 
+                document.getElementById('username').value = saved; 
+                registrarUsuario(saved); 
+            }
         };
     </script>
 </body>
