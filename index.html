@@ -256,9 +256,17 @@
             usuarioActual = user;
             localStorage.setItem('urrichat_user', user);
             
+            // Sistema de presencia Real-time mejorado
             const userRef = db.ref("usuarios/" + user);
-            userRef.set("online");
-            userRef.onDisconnect().set("offline");
+            const connectedRef = db.ref(".info/connected");
+
+            connectedRef.on("value", (snap) => {
+                if (snap.val() === true) {
+                    // Cuando nos conectamos, configuramos la desconexión automática
+                    userRef.onDisconnect().set("offline");
+                    userRef.set("online");
+                }
+            });
 
             const ultimaSala = localStorage.getItem('urrichat_last_room');
             const ultimoTitulo = localStorage.getItem('urrichat_last_title');
@@ -279,7 +287,6 @@
         function escucharUsuarios() {
             db.ref("usuarios").on("value", (snap) => {
                 const list = document.getElementById("usuarios-conectados");
-                const currentUsersInList = Array.from(list.children).map(c => c.getAttribute('data-user'));
                 
                 snap.forEach((child) => {
                     const uKey = child.key;
@@ -295,16 +302,38 @@
                             list.appendChild(card);
                         }
                         
+                        const isOnline = child.val() === 'online';
                         card.innerHTML = `<span><i class="fas fa-user" style="margin-right:10px; color: #007bff;"></i>${uKey}</span>
                                           <div style="display:flex;align-items:center">
                                             <span id="badge-${salaID}"></span>
-                                            <span class="online-dot ${child.val()==='online'?'dot-online':'dot-offline'}"></span>
+                                            <span class="online-dot ${isOnline ? 'dot-online' : 'dot-offline'}"></span>
                                           </div>`;
                         verificarMensajesNuevos(salaID);
+
+                        // Si el usuario está en chat activo con esta persona, actualizar header
+                        if (salaActual === salaID) {
+                            actualizarHeaderStatus(isOnline);
+                        }
                     }
                 });
             });
             verificarMensajesNuevos('muro');
+        }
+
+        function actualizarHeaderStatus(isOnline) {
+            const dot = document.getElementById('header-status-dot');
+            const text = document.getElementById('header-status-text');
+            if (!dot || !text) return;
+
+            if (isOnline) {
+                dot.className = 'dot-online';
+                text.innerText = 'Conectado';
+                text.style.color = '#2ecc71';
+            } else {
+                dot.className = 'dot-offline';
+                text.innerText = 'Desconectado';
+                text.style.color = '#ff4444';
+            }
         }
 
         function verificarMensajesNuevos(id) {
@@ -312,7 +341,6 @@
                 const b = document.getElementById(`badge-${id}`);
                 if (!b) return;
                 
-                // Si estamos dentro de ESTA sala, marcamos como leído inmediatamente
                 if (salaActual === id) {
                     b.innerHTML = "";
                     snap.forEach(m => {
@@ -331,33 +359,23 @@
 
         function monitorearEstadoChat(nombreUsuario) {
             const statusContainer = document.getElementById('chat-header-status');
-            const dot = document.getElementById('header-status-dot');
-            const text = document.getElementById('header-status-text');
-
             if (salaActual === 'muro') {
                 statusContainer.style.display = 'none';
                 return;
             }
-
             statusContainer.style.display = 'flex';
+            // Listener específico para el usuario con el que se chatea
             db.ref("usuarios/" + nombreUsuario).on("value", (snap) => {
-                const status = snap.val();
-                if (status === 'online') {
-                    dot.className = 'dot-online';
-                    text.innerText = 'Conectado';
-                    text.style.color = '#2ecc71';
-                } else {
-                    dot.className = 'dot-offline';
-                    text.innerText = 'Desconectado';
-                    text.style.color = '#ff4444';
-                }
+                actualizarHeaderStatus(snap.val() === 'online');
             });
         }
 
         function abrirChat(id, title) {
-            // Limpiar listener de estado anterior
+            // Limpiar listener de estado anterior para evitar fugas de memoria y errores visuales
             const viejoTitulo = document.getElementById('chat-title').innerText;
-            if (viejoTitulo && viejoTitulo !== 'Chat') db.ref("usuarios/" + viejoTitulo).off();
+            if (viejoTitulo && viejoTitulo !== 'Chat' && viejoTitulo !== 'Chat Grupal') {
+                db.ref("usuarios/" + viejoTitulo).off();
+            }
 
             salaActual = id;
             cancelarSeleccion();
@@ -396,7 +414,6 @@
                     const key = child.key;
                     const esMio = d.u === usuarioActual;
                     
-                    // Marcar como leído si el mensaje es del otro
                     if(!esMio && d.r === false) { db.ref(`${salaActual}/${key}/r`).set(true); }
                     
                     let replyHtml = "";
@@ -553,7 +570,7 @@
                 db.ref(`typing/${salaActual}/${usuarioActual}`).set(false);
                 db.ref(`typing/${salaActual}`).off();
                 const titulo = document.getElementById('chat-title').innerText;
-                if(titulo !== 'Chat') db.ref("usuarios/" + titulo).off();
+                if(titulo !== 'Chat' && titulo !== 'Chat Grupal') db.ref("usuarios/" + titulo).off();
             }
             salaActual = ""; 
             localStorage.setItem('urrichat_last_room', 'contacts');
@@ -568,9 +585,10 @@
         
         function confirmarSalida() { 
             if (confirm("¿Cerrar sesión?")) { 
-                db.ref("usuarios/" + usuarioActual).set("offline"); 
-                localStorage.clear(); 
-                location.reload(); 
+                db.ref("usuarios/" + usuarioActual).set("offline").then(() => {
+                    localStorage.clear(); 
+                    location.reload(); 
+                });
             } 
         }
 
@@ -580,9 +598,6 @@
                 db.ref("usuarios/" + usuarioActual).set("offline");
                 usuarioActual = n.trim();
                 localStorage.setItem('urrichat_user', usuarioActual);
-                db.ref("usuarios/" + usuarioActual).set("online");
-                db.ref("usuarios/" + usuarioActual).onDisconnect().set("offline");
-                document.getElementById('mi-perfil').innerText = "● " + usuarioActual;
                 location.reload();
             }
         }
