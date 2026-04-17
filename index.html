@@ -70,13 +70,15 @@
             -webkit-overflow-scrolling: touch; 
         }
 
+        /* AJUSTE CRÍTICO: Usamos flex-direction normal pero aseguramos el scroll */
         #messages { 
             flex: 1; 
             overflow-y: auto; 
             padding: 15px 0; 
             display: flex; 
-            flex-direction: column-reverse; /* Inversión para anclar scroll al fondo */
+            flex-direction: column; 
             -webkit-overflow-scrolling: touch; 
+            scroll-behavior: smooth;
         }
 
         .msg-container { display: flex; width: 100%; padding: 2px 15px; margin-bottom: 8px; transition: background 0.3s; position: relative; flex-shrink: 0; }
@@ -203,7 +205,7 @@
             <input type="file" id="file-input" style="display:none" onchange="enviarArchivo(this)">
             <button class="footer-btn" onclick="document.getElementById('file-input').click()"><i class="fas fa-paperclip"></i></button>
             <button class="footer-btn" id="mic-btn" onclick="toggleAudio()"><i class="fas fa-microphone"></i></button>
-            <textarea id="msg-input" placeholder="Mensaje..." rows="1" oninput="autoResize(this)" onkeydown="checkEnter(event)"></textarea>
+            <textarea id="msg-input" placeholder="Mensaje..." rows="1" oninput="autoResize(this)"></textarea>
             <button id="main-btn" onclick="enviar()"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
@@ -243,25 +245,26 @@
         let mensajeParaResponder = null;
         let pressTimer;
 
-        // --- LÓGICA PARA FIJAR EL VIEWPORT CUANDO SALE EL TECLADO ---
+        // --- LÓGICA DE VIEWPORT PARA EL TECLADO ---
         function adjustLayout() {
-            const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-            const containers = ['login', 'contacts-container', 'chat-container'];
-            
-            containers.forEach(id => {
-                const el = document.getElementById(id);
-                if (el.style.display === 'flex' || getComputedStyle(el).display === 'flex') {
-                    el.style.height = vh + 'px';
+            if (window.visualViewport) {
+                const vh = window.visualViewport.height;
+                // Aplicamos la altura real disponible al contenedor activo
+                const activeId = document.getElementById('chat-container').style.display === 'flex' ? 'chat-container' : 
+                                 document.getElementById('contacts-container').style.display === 'flex' ? 'contacts-container' : 'login';
+                
+                const el = document.getElementById(activeId);
+                el.style.height = vh + 'px';
+                
+                // Si el teclado sube, forzamos scroll al fondo
+                if (activeId === 'chat-container') {
+                    scrollToBottom();
                 }
-            });
-            window.scrollTo(0, 0); 
+            }
         }
 
         if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
-                adjustLayout();
-                setTimeout(scrollToBottom, 50);
-            });
+            window.visualViewport.addEventListener('resize', adjustLayout);
             window.visualViewport.addEventListener('scroll', () => {
                 if (window.scrollY !== 0) window.scrollTo(0, 0);
             });
@@ -276,7 +279,13 @@
             scrollToBottom();
         }
 
-        function checkEnter(e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); } }
+        // Corregido: Enviar con Enter en móviles a veces falla si no se maneja así
+        document.getElementById('msg-input').addEventListener('keydown', (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                enviar();
+            }
+        });
 
         function registrarUsuario(persistente) {
             let user = persistente || document.getElementById('username').value.trim();
@@ -299,24 +308,19 @@
         function completarLogin(user) {
             usuarioActual = user;
             localStorage.setItem('urrichat_user', user);
-            
             const userRef = db.ref("usuarios/" + user);
             const connectedRef = db.ref(".info/connected");
-
             connectedRef.on("value", (snap) => {
                 if (snap.val() === true) {
                     userRef.onDisconnect().set("offline");
                     userRef.set("online");
                 }
             });
-
             const ultimaSala = localStorage.getItem('urrichat_last_room');
             const ultimoTitulo = localStorage.getItem('urrichat_last_title');
             document.getElementById('login').style.display = 'none';
             document.getElementById('mi-perfil').innerText = "● " + user;
-            
             escucharUsuarios();
-
             if (ultimaSala && ultimaSala !== "contacts") {
                 abrirChat(ultimaSala, ultimoTitulo || "Chat");
             } else {
@@ -324,19 +328,17 @@
                 document.getElementById('chat-container').style.display = 'none';
                 localStorage.setItem('urrichat_last_room', 'contacts');
             }
-            setTimeout(adjustLayout, 100);
+            setTimeout(adjustLayout, 300);
         }
 
         function escucharUsuarios() {
             db.ref("usuarios").on("value", (snap) => {
                 const list = document.getElementById("usuarios-conectados");
-                
                 snap.forEach((child) => {
                     const uKey = child.key;
                     if (uKey !== usuarioActual) {
                         const salaID = "privado_" + [usuarioActual, uKey].sort().join("_");
                         let card = list.querySelector(`[data-user="${uKey}"]`);
-                        
                         if (!card) {
                             card = document.createElement("div");
                             card.className = "contact-card";
@@ -344,7 +346,6 @@
                             card.onclick = () => abrirChat(salaID, uKey);
                             list.appendChild(card);
                         }
-                        
                         const isOnline = child.val() === 'online';
                         card.innerHTML = `<span><i class="fas fa-user" style="margin-right:10px; color: #007bff;"></i>${uKey}</span>
                                           <div style="display:flex;align-items:center">
@@ -352,10 +353,7 @@
                                             <span class="online-dot ${isOnline ? 'dot-online' : 'dot-offline'}"></span>
                                           </div>`;
                         verificarMensajesNuevos(salaID);
-
-                        if (salaActual === salaID) {
-                            actualizarHeaderStatus(isOnline);
-                        }
+                        if (salaActual === salaID) actualizarHeaderStatus(isOnline);
                     }
                 });
             });
@@ -366,7 +364,6 @@
             const dot = document.getElementById('header-status-dot');
             const text = document.getElementById('header-status-text');
             if (!dot || !text) return;
-
             if (isOnline) {
                 dot.className = 'dot-online';
                 text.innerText = 'Conectado';
@@ -382,59 +379,43 @@
             db.ref(id).on("value", (snap) => {
                 const b = document.getElementById(`badge-${id}`);
                 if (!b) return;
-                
                 if (salaActual === id) {
                     b.innerHTML = "";
                     snap.forEach(m => {
-                        if(m.val().u !== usuarioActual && m.val().r === false) {
-                            db.ref(`${id}/${m.key}/r`).set(true);
-                        }
+                        if(m.val().u !== usuarioActual && m.val().r === false) db.ref(`${id}/${m.key}/r`).set(true);
                     });
                     return;
                 }
-                
                 let c = 0; 
                 snap.forEach(m => { if(m.val().u !== usuarioActual && m.val().r === false) c++; });
                 b.innerHTML = c > 0 ? `<span class="unread-badge">${c}</span>` : "";
             });
         }
 
-        function monitorearEstadoChat(nombreUsuario) {
-            const statusContainer = document.getElementById('chat-header-status');
-            if (salaActual === 'muro') {
-                statusContainer.style.display = 'none';
-                return;
-            }
-            statusContainer.style.display = 'flex';
-            db.ref("usuarios/" + nombreUsuario).on("value", (snap) => {
-                actualizarHeaderStatus(snap.val() === 'online');
-            });
-        }
-
         function abrirChat(id, title) {
             const viejoTitulo = document.getElementById('chat-title').innerText;
-            if (viejoTitulo && viejoTitulo !== 'Chat' && viejoTitulo !== 'Chat Grupal') {
-                db.ref("usuarios/" + viejoTitulo).off();
-            }
-
+            if (viejoTitulo && viejoTitulo !== 'Chat' && viejoTitulo !== 'Chat Grupal') db.ref("usuarios/" + viejoTitulo).off();
             salaActual = id;
             cancelarSeleccion();
             cancelarRespuesta();
             localStorage.setItem('urrichat_last_room', id);
             localStorage.setItem('urrichat_last_title', title);
-            
             document.getElementById('contacts-container').style.display = 'none';
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = title;
-            
-            monitorearEstadoChat(title);
+            if (salaActual === 'muro') document.getElementById('chat-header-status').style.display = 'none';
+            else {
+                document.getElementById('chat-header-status').style.display = 'flex';
+                db.ref("usuarios/" + title).on("value", (snap) => actualizarHeaderStatus(snap.val() === 'online'));
+            }
             escucharMensajes();
             escucharEscritura();
-            
             const b = document.getElementById(`badge-${id}`);
             if(b) b.innerHTML = "";
-            setTimeout(adjustLayout, 100);
-            setTimeout(scrollToBottom, 300); 
+            setTimeout(() => {
+                adjustLayout();
+                scrollToBottom();
+            }, 300);
         }
 
         function escucharEscritura() {
@@ -442,7 +423,6 @@
                 let alguienEscribiendo = false;
                 snap.forEach(child => { if (child.key !== usuarioActual && child.val() === true) alguienEscribiendo = true; });
                 document.getElementById('chat-subtitle').style.display = alguienEscribiendo ? 'block' : 'none';
-                document.getElementById('chat-header-status').style.display = alguienEscribiendo ? 'none' : (salaActual === 'muro' ? 'none' : 'flex');
             });
         }
 
@@ -450,27 +430,13 @@
             db.ref(salaActual).off(); 
             db.ref(salaActual).on("value", (snap) => {
                 const box = document.getElementById("messages");
-                let mensajesArray = [];
-                snap.forEach(child => { mensajesArray.push({ key: child.key, d: child.val() }); });
-
-                // Invertimos el orden para column-reverse
-                mensajesArray.reverse();
-
                 let htmlContent = "";
-                mensajesArray.forEach(item => {
-                    const d = item.d;
-                    const key = item.key;
+                snap.forEach(child => {
+                    const d = child.val();
+                    const key = child.key;
                     const esMio = d.u === usuarioActual;
-                    
-                    if(!esMio && d.r === false) { db.ref(`${salaActual}/${key}/r`).set(true); }
-                    
-                    let replyHtml = "";
-                    if(d.reply) {
-                        replyHtml = `<div class="reply-box" style="border-left-color: ${esMio?'#fff':'#007bff'}">
-                                        <small><strong>${d.reply.u}</strong></small><br>
-                                        <small>${d.reply.t || 'Archivo'}</small>
-                                    </div>`;
-                    }
+                    if(!esMio && d.r === false) db.ref(`${salaActual}/${key}/r`).set(true);
+                    let replyHtml = d.reply ? `<div class="reply-box" style="border-left-color: ${esMio?'#fff':'#007bff'}"><small><strong>${d.reply.u}</strong></small><br><small>${d.reply.t || 'Archivo'}</small></div>` : "";
                     let content = !esMio ? `<small style="color:#888; font-weight:bold; font-size:11px; margin-bottom:4px; display:block;">${d.u}</small>` : "";
                     content += replyHtml;
                     if(d.t) content += `<span>${d.t}</span>`;
@@ -485,50 +451,42 @@
                         content += `</div>`;
                     }
                     const isSelected = mensajesSeleccionados.includes(key) ? 'selected' : '';
-                    htmlContent += `
-                        <div class="msg-container ${esMio?'me':'other'} ${isSelected}" id="cont-${key}" 
-                             onclick="manejarClickMensaje('${key}')" 
-                             onmousedown="startPress(event, '${key}')" 
-                             onmouseup="clearPress()" 
-                             ontouchstart="startPress(event, '${key}')" 
-                             ontouchend="clearPress()">
-                            <div class="msg ${esMio?'me':'other'}" ondblclick="reaccionar(event,'${key}')">
-                                ${content}
-                                <div class="status-info">${d.h} ${esMio?(d.r?'<i class="fas fa-check-double" style="color:#88ccff"></i>':'<i class="fas fa-check"></i>'):''}</div>
-                            </div>
-                        </div>`;
+                    htmlContent += `<div class="msg-container ${esMio?'me':'other'} ${isSelected}" id="cont-${key}" onclick="manejarClickMensaje('${key}')" onmousedown="startPress(event, '${key}')" onmouseup="clearPress()" ontouchstart="startPress(event, '${key}')" ontouchend="clearPress()"><div class="msg ${esMio?'me':'other'}" ondblclick="reaccionar(event,'${key}')">${content}<div class="status-info">${d.h} ${esMio?(d.r?'<i class="fas fa-check-double" style="color:#88ccff"></i>':'<i class="fas fa-check"></i>'):''}</div></div></div>`;
                 });
                 box.innerHTML = htmlContent;
-                // Con column-reverse no necesitamos scrollToBottom aquí, el scroll se queda abajo
+                scrollToBottom();
             });
+        }
+
+        function scrollToBottom() {
+            const box = document.getElementById("messages");
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function handleScroll(el) { 
+            document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; 
         }
 
         function startPress(e, key) { pressTimer = setTimeout(() => activarSeleccion(key), 600); }
         function clearPress() { clearTimeout(pressTimer); }
         function activarSeleccion(key) { if (mensajesSeleccionados.length === 0) { mensajesSeleccionados.push(key); actualizarInterfazSeleccion(); } }
-        function manejarClickMensaje(key) { if (mensajesSeleccionados.length > 0) { if (mensajesSeleccionados.includes(key)) { mensajesSeleccionados = mensajesSeleccionados.filter(id => id !== key); } else { mensajesSeleccionados.push(key); } actualizarInterfazSeleccion(); } }
-        
+        function manejarClickMensaje(key) { if (mensajesSeleccionados.length > 0) { if (mensajesSeleccionados.includes(key)) mensajesSeleccionados = mensajesSeleccionados.filter(id => id !== key); else mensajesSeleccionados.push(key); actualizarInterfazSeleccion(); } }
         function actualizarInterfazSeleccion() {
             const count = mensajesSeleccionados.length;
-            const normalHeader = document.getElementById('chat-header-normal');
-            const selectHeader = document.getElementById('chat-header-selection');
-            const replyBtn = document.getElementById('reply-btn-header');
             if (count > 0) {
-                normalHeader.style.display = 'none';
-                selectHeader.style.display = 'flex';
+                document.getElementById('chat-header-normal').style.display = 'none';
+                document.getElementById('chat-header-selection').style.display = 'flex';
                 document.getElementById('selection-count').innerText = count;
-                replyBtn.style.display = count === 1 ? 'block' : 'none';
-                document.querySelectorAll('.msg-container').forEach(el => { const id = el.id.replace('cont-', ''); el.classList.toggle('selected', mensajesSeleccionados.includes(id)); });
-            } else { cancelarSeleccion(); }
+                document.getElementById('reply-btn-header').style.display = count === 1 ? 'block' : 'none';
+                document.querySelectorAll('.msg-container').forEach(el => el.classList.toggle('selected', mensajesSeleccionados.includes(el.id.replace('cont-', ''))));
+            } else cancelarSeleccion();
         }
-
         function cancelarSeleccion() {
             mensajesSeleccionados = [];
             document.getElementById('chat-header-normal').style.display = 'flex';
             document.getElementById('chat-header-selection').style.display = 'none';
             document.querySelectorAll('.msg-container').forEach(el => el.classList.remove('selected'));
         }
-
         function prepararRespuesta() {
             const key = mensajesSeleccionados[0];
             db.ref(`${salaActual}/${key}`).once('value', (snap) => {
@@ -541,12 +499,10 @@
                 document.getElementById('msg-input').focus();
             });
         }
-
         function cancelarRespuesta() { mensajeParaResponder = null; document.getElementById('reply-preview').style.display = 'none'; }
-        
         function borrarMensajesSeleccionados() { 
             if (confirm(`¿Borrar ${mensajesSeleccionados.length} mensaje(s)?`)) { 
-                mensajesSeleccionados.forEach(key => { db.ref(`${salaActual}/${key}`).remove(); }); 
+                mensajesSeleccionados.forEach(key => db.ref(`${salaActual}/${key}`).remove()); 
                 cancelarSeleccion(); 
             } 
         }
@@ -584,7 +540,6 @@
                             const msgData = { u: usuarioActual, file: reader.result, fileType: 'audio', h: h, r: false };
                             if(mensajeParaResponder) msgData.reply = mensajeParaResponder;
                             db.ref(salaActual).push(msgData);
-                            cancelarRespuesta();
                         };
                         stream.getTracks().forEach(t => t.stop());
                     };
@@ -602,19 +557,7 @@
             s.style.top = (e.clientY > window.innerHeight/2 ? e.clientY-120 : e.clientY+20) + 'px';
             s.style.left = Math.max(10, Math.min(window.innerWidth-230, e.clientX-100)) + 'px';
         }
-
         function aplicarReaccion(emoji) { db.ref(`${salaActual}/${msgIdParaReaccionar}/reacciones/${emoji}`).transaction(v => (v || 0) + 1); cerrarSelectores(); }
-        
-        function scrollToBottom() { 
-            const b = document.getElementById("messages"); 
-            b.scrollTop = b.scrollHeight; 
-        }
-        
-        function handleScroll(el) { 
-            // Invertimos la lógica del botón por el column-reverse
-            document.getElementById('scroll-down').style.display = (el.scrollTop < -100) ? 'flex' : 'none'; 
-        }
-
         function volverAContactos() { 
             if(salaActual) {
                 db.ref(`typing/${salaActual}/${usuarioActual}`).set(false);
@@ -628,21 +571,11 @@
             document.getElementById('contacts-container').style.display = 'flex'; 
             setTimeout(adjustLayout, 100);
         }
-
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
         function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='grid'?'none':'grid'; }
         function addEmoji(e) { document.getElementById('msg-input').value += e; cerrarSelectores(); }
         function vaciarChat() { if(confirm("¿Vaciar chat?")) db.ref(salaActual).remove(); }
-        
-        function confirmarSalida() { 
-            if (confirm("¿Cerrar sesión?")) { 
-                db.ref("usuarios/" + usuarioActual).set("offline").then(() => {
-                    localStorage.clear(); 
-                    location.reload(); 
-                });
-            } 
-        }
-
+        function confirmarSalida() { if (confirm("¿Cerrar sesión?")) { db.ref("usuarios/" + usuarioActual).set("offline").then(() => { localStorage.clear(); location.reload(); }); } }
         function editarNombre() {
             let n = prompt("Nuevo nombre:", usuarioActual);
             if (n && n.trim() !== "" && n !== usuarioActual) {
@@ -652,7 +585,6 @@
                 location.reload();
             }
         }
-
         function enviarArchivo(input) {
             const file = input.files[0];
             if (file) {
@@ -664,22 +596,18 @@
                     const msgData = { u: usuarioActual, file: reader.result, fileType: file.type, h: h, r: false };
                     if(mensajeParaResponder) msgData.reply = mensajeParaResponder;
                     db.ref(salaActual).push(msgData);
-                    cancelarRespuesta();
                 };
             }
         }
-
         window.onload = () => { 
             const saved = localStorage.getItem('urrichat_user');
-            if(saved) { 
-                document.getElementById('username').value = saved; 
-                registrarUsuario(saved); 
-            }
+            if(saved) { document.getElementById('username').value = saved; registrarUsuario(saved); }
             adjustLayout();
         };
 
+        // Al hacer clic en el input, bajamos scroll tras un breve delay para que el teclado suba
         document.getElementById('msg-input').addEventListener('focus', () => {
-            setTimeout(scrollToBottom, 300);
+            setTimeout(scrollToBottom, 400);
         });
     </script>
 </body>
