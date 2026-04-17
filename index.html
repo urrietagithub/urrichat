@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         /* --- ESTILOS BASE --- */
-        * { box-sizing: border-box; } 
+        * { box-sizing: border-box; touch-action: manipulation; } 
         html, body { 
             height: 100%; 
             margin: 0; 
@@ -36,7 +36,9 @@
             height: 100%; 
             max-width: 100vw; 
             overflow: hidden;
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         #contacts-container, #chat-container { flex-direction: column; }
@@ -77,7 +79,6 @@
             display: flex; 
             flex-direction: column; 
             -webkit-overflow-scrolling: touch; 
-            scroll-behavior: smooth;
         }
 
         .msg-container { display: flex; width: 100%; padding: 2px 15px; margin-bottom: 8px; transition: background 0.3s; position: relative; flex-shrink: 0; }
@@ -244,22 +245,25 @@
         let mensajeParaResponder = null;
         let pressTimer;
 
-        // --- AJUSTE AUTOMÁTICO DE ALTURA (VISUAL VIEWPORT) ---
-        function adjustHeight() {
+        // --- AJUSTE DINÁMICO MEJORADO ---
+        function updateLayout() {
             const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-            // Aplicamos la altura real disponible al contenedor activo
             const containers = ['login', 'contacts-container', 'chat-container'];
+            
             containers.forEach(id => {
                 const el = document.getElementById(id);
-                if (el && el.style.display === 'flex') {
-                    el.style.height = vh + 'px';
+                if (el && el.style.display !== 'none') {
+                    el.style.height = `${vh}px`;
                 }
             });
+
+            // Forzar scroll 0 en el body para evitar que el navegador desplace el layout
+            window.scrollTo(0, 0);
             if (salaActual) scrollToBottom();
         }
 
         if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', adjustHeight);
+            window.visualViewport.addEventListener('resize', updateLayout);
             window.visualViewport.addEventListener('scroll', () => {
                 if (window.scrollY !== 0) window.scrollTo(0, 0);
             });
@@ -322,7 +326,7 @@
                 document.getElementById('chat-container').style.display = 'none';
                 localStorage.setItem('urrichat_last_room', 'contacts');
             }
-            setTimeout(adjustHeight, 300);
+            setTimeout(updateLayout, 300);
         }
 
         function escucharUsuarios() {
@@ -407,7 +411,7 @@
             const b = document.getElementById(`badge-${id}`);
             if(b) b.innerHTML = "";
             setTimeout(() => {
-                adjustHeight();
+                updateLayout();
                 scrollToBottom();
             }, 300);
         }
@@ -563,7 +567,7 @@
             localStorage.setItem('urrichat_last_room', 'contacts');
             document.getElementById('chat-container').style.display = 'none'; 
             document.getElementById('contacts-container').style.display = 'flex'; 
-            setTimeout(adjustHeight, 100);
+            setTimeout(updateLayout, 100);
         }
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
         function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='grid'?'none':'grid'; }
@@ -596,12 +600,12 @@
         window.onload = () => { 
             const saved = localStorage.getItem('urrichat_user');
             if(saved) { document.getElementById('username').value = saved; registrarUsuario(saved); }
-            adjustHeight();
+            updateLayout();
         };
 
-        // Al hacer clic en el input, bajamos scroll tras un breve delay para que el teclado suba y ocupe su lugar
+        // Forzar recalcular layout al enfocar el input para sincronizar con el teclado
         document.getElementById('msg-input').addEventListener('focus', () => {
-            setTimeout(scrollToBottom, 400);
+            setTimeout(updateLayout, 300);
         });
     </script>
 </body>
