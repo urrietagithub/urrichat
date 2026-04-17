@@ -70,7 +70,6 @@
             -webkit-overflow-scrolling: touch; 
         }
 
-        /* AJUSTE CRÍTICO: Usamos flex-direction normal pero aseguramos el scroll */
         #messages { 
             flex: 1; 
             overflow-y: auto; 
@@ -245,24 +244,25 @@
         let mensajeParaResponder = null;
         let pressTimer;
 
-        // --- LÓGICA DE VIEWPORT PARA EL TECLADO ---
+        // --- LÓGICA DE VIEWPORT PARA EL TECLADO (AJUSTE SOLICITADO) ---
         function adjustLayout() {
             if (window.visualViewport) {
                 const vh = window.visualViewport.height;
-                // Aplicamos la altura real disponible al contenedor activo
+                // Ajustar contenedor principal según lo visible
                 const activeId = document.getElementById('chat-container').style.display === 'flex' ? 'chat-container' : 
                                  document.getElementById('contacts-container').style.display === 'flex' ? 'contacts-container' : 'login';
                 
                 const el = document.getElementById(activeId);
-                el.style.height = vh + 'px';
+                if (el) el.style.height = vh + 'px';
                 
-                // Si el teclado sube, forzamos scroll al fondo
+                // Si estamos en el chat, bajar scroll al fondo
                 if (activeId === 'chat-container') {
                     scrollToBottom();
                 }
             }
         }
 
+        // Listeners para cambios de teclado
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', adjustLayout);
             window.visualViewport.addEventListener('scroll', () => {
@@ -279,7 +279,6 @@
             scrollToBottom();
         }
 
-        // Corregido: Enviar con Enter en móviles a veces falla si no se maneja así
         document.getElementById('msg-input').addEventListener('keydown', (e) => {
             if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -328,6 +327,7 @@
                 document.getElementById('chat-container').style.display = 'none';
                 localStorage.setItem('urrichat_last_room', 'contacts');
             }
+            // Pequeño delay para que el render finalice antes de ajustar
             setTimeout(adjustLayout, 300);
         }
 
@@ -460,7 +460,7 @@
 
         function scrollToBottom() {
             const box = document.getElementById("messages");
-            box.scrollTop = box.scrollHeight;
+            if (box) box.scrollTop = box.scrollHeight;
         }
 
         function handleScroll(el) { 
@@ -605,7 +605,7 @@
             adjustLayout();
         };
 
-        // Al hacer clic en el input, bajamos scroll tras un breve delay para que el teclado suba
+        // Al hacer clic en el input, bajamos scroll tras un breve delay para que el teclado suba y ocupe su lugar
         document.getElementById('msg-input').addEventListener('focus', () => {
             setTimeout(scrollToBottom, 400);
         });
