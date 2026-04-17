@@ -371,6 +371,7 @@
         }
 
         function verificarMensajesNuevos(id) {
+            // El cambio clave está aquí: .on mantiene la escucha activa
             db.ref(id).on("value", (snap) => {
                 const b = document.getElementById(`badge-${id}`);
                 if (!b) return;
