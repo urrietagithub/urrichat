@@ -244,27 +244,22 @@
         let mensajeParaResponder = null;
         let pressTimer;
 
-        // --- LÓGICA DE VIEWPORT PARA EL TECLADO (AJUSTE SOLICITADO) ---
-        function adjustLayout() {
-            if (window.visualViewport) {
-                const vh = window.visualViewport.height;
-                // Ajustar contenedor principal según lo visible
-                const activeId = document.getElementById('chat-container').style.display === 'flex' ? 'chat-container' : 
-                                 document.getElementById('contacts-container').style.display === 'flex' ? 'contacts-container' : 'login';
-                
-                const el = document.getElementById(activeId);
-                if (el) el.style.height = vh + 'px';
-                
-                // Si estamos en el chat, bajar scroll al fondo
-                if (activeId === 'chat-container') {
-                    scrollToBottom();
+        // --- AJUSTE AUTOMÁTICO DE ALTURA (VISUAL VIEWPORT) ---
+        function adjustHeight() {
+            const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+            // Aplicamos la altura real disponible al contenedor activo
+            const containers = ['login', 'contacts-container', 'chat-container'];
+            containers.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.style.display === 'flex') {
+                    el.style.height = vh + 'px';
                 }
-            }
+            });
+            if (salaActual) scrollToBottom();
         }
 
-        // Listeners para cambios de teclado
         if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', adjustLayout);
+            window.visualViewport.addEventListener('resize', adjustHeight);
             window.visualViewport.addEventListener('scroll', () => {
                 if (window.scrollY !== 0) window.scrollTo(0, 0);
             });
@@ -327,8 +322,7 @@
                 document.getElementById('chat-container').style.display = 'none';
                 localStorage.setItem('urrichat_last_room', 'contacts');
             }
-            // Pequeño delay para que el render finalice antes de ajustar
-            setTimeout(adjustLayout, 300);
+            setTimeout(adjustHeight, 300);
         }
 
         function escucharUsuarios() {
@@ -413,7 +407,7 @@
             const b = document.getElementById(`badge-${id}`);
             if(b) b.innerHTML = "";
             setTimeout(() => {
-                adjustLayout();
+                adjustHeight();
                 scrollToBottom();
             }, 300);
         }
@@ -569,7 +563,7 @@
             localStorage.setItem('urrichat_last_room', 'contacts');
             document.getElementById('chat-container').style.display = 'none'; 
             document.getElementById('contacts-container').style.display = 'flex'; 
-            setTimeout(adjustLayout, 100);
+            setTimeout(adjustHeight, 100);
         }
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
         function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='grid'?'none':'grid'; }
@@ -602,7 +596,7 @@
         window.onload = () => { 
             const saved = localStorage.getItem('urrichat_user');
             if(saved) { document.getElementById('username').value = saved; registrarUsuario(saved); }
-            adjustLayout();
+            adjustHeight();
         };
 
         // Al hacer clic en el input, bajamos scroll tras un breve delay para que el teclado suba y ocupe su lugar
