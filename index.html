@@ -16,16 +16,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        /* --- ESTILOS BASE (Mantenidos) --- */
+        /* --- ESTILOS BASE --- */
         * { box-sizing: border-box; } 
         html, body { 
-            height: 100dvh; 
+            height: 100%; 
+            width: 100%;
             margin: 0; 
             padding: 0; 
             overflow: hidden; 
             background: radial-gradient(circle at center, #1a1a20 0%, #0f0f12 100%);
             color: white;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            position: fixed; /* Evita el rebote de scroll en iOS */
         }
 
         #login, #contacts-container, #chat-container {
@@ -53,7 +55,7 @@
 
         #login-btn { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 15px; font-weight: 700; cursor: pointer; }
 
-        /* MODIFICACIÓN PROFESIONAL PARA EL HEADER FIJO */
+        /* SOLUCIÓN AL HEADER FIJO REAL */
         .header { 
             height: 65px; 
             min-height: 65px; 
@@ -64,13 +66,23 @@
             background: #1a1a20; 
             border-bottom: 1px solid #333; 
             z-index: 1000; 
-            flex-shrink: 0;
-            position: sticky;
+            position: fixed; /* Cambiado a fixed */
             top: 0;
+            left: 0;
+            right: 0;
             width: 100%;
         }
 
-        #lista-usuarios, #messages { flex: 1; overflow-y: auto; padding: 15px 0; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
+        /* Compensación para que el contenido no empiece debajo del header fijo */
+        #lista-usuarios, #messages { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 15px 0; 
+            padding-top: 80px; /* Espacio para el header fijo */
+            display: flex; 
+            flex-direction: column; 
+            -webkit-overflow-scrolling: touch; 
+        }
 
         .msg-container { display: flex; width: 100%; padding: 2px 15px; margin-bottom: 8px; transition: background 0.3s; position: relative; }
         .msg-container.selected { background: rgba(0, 123, 255, 0.2); }
@@ -236,6 +248,21 @@
         let mensajeParaResponder = null;
         let pressTimer;
 
+        // --- SCRIPT PARA FIJAR EL VIEWPORT CUANDO SALE EL TECLADO ---
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const containers = ['contacts-container', 'chat-container'];
+                containers.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el.style.display === 'flex') {
+                        el.style.height = window.visualViewport.height + 'px';
+                    }
+                });
+                window.scrollTo(0, 0); // Evita que la página se desplace hacia arriba
+                scrollToBottom();
+            });
+        }
+
         function autoResize(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = (textarea.scrollHeight) + 'px';
@@ -268,13 +295,11 @@
             usuarioActual = user;
             localStorage.setItem('urrichat_user', user);
             
-            // Sistema de presencia Real-time mejorado
             const userRef = db.ref("usuarios/" + user);
             const connectedRef = db.ref(".info/connected");
 
             connectedRef.on("value", (snap) => {
                 if (snap.val() === true) {
-                    // Cuando nos conectamos, configuramos la desconexión automática
                     userRef.onDisconnect().set("offline");
                     userRef.set("online");
                 }
@@ -299,30 +324,27 @@
         function escucharUsuarios() {
             db.ref("usuarios").on("value", (snap) => {
                 const list = document.getElementById("usuarios-conectados");
+                list.innerHTML = ""; // Limpiar antes de reconstruir para evitar duplicados
                 
                 snap.forEach((child) => {
                     const uKey = child.key;
                     if (uKey !== usuarioActual) {
                         const salaID = "privado_" + [usuarioActual, uKey].sort().join("_");
-                        let card = list.querySelector(`[data-user="${uKey}"]`);
-                        
-                        if (!card) {
-                            card = document.createElement("div");
-                            card.className = "contact-card";
-                            card.setAttribute('data-user', uKey);
-                            card.onclick = () => abrirChat(salaID, uKey);
-                            list.appendChild(card);
-                        }
-                        
                         const isOnline = child.val() === 'online';
+                        
+                        const card = document.createElement("div");
+                        card.className = "contact-card";
+                        card.setAttribute('data-user', uKey);
+                        card.onclick = () => abrirChat(salaID, uKey);
+                        
                         card.innerHTML = `<span><i class="fas fa-user" style="margin-right:10px; color: #007bff;"></i>${uKey}</span>
                                           <div style="display:flex;align-items:center">
                                             <span id="badge-${salaID}"></span>
                                             <span class="online-dot ${isOnline ? 'dot-online' : 'dot-offline'}"></span>
                                           </div>`;
+                        list.appendChild(card);
                         verificarMensajesNuevos(salaID);
 
-                        // Si el usuario está en chat activo con esta persona, actualizar header
                         if (salaActual === salaID) {
                             actualizarHeaderStatus(isOnline);
                         }
@@ -376,14 +398,12 @@
                 return;
             }
             statusContainer.style.display = 'flex';
-            // Listener específico para el usuario con el que se chatea
             db.ref("usuarios/" + nombreUsuario).on("value", (snap) => {
                 actualizarHeaderStatus(snap.val() === 'online');
             });
         }
 
         function abrirChat(id, title) {
-            // Limpiar listener de estado anterior para evitar fugas de memoria y errores visuales
             const viejoTitulo = document.getElementById('chat-title').innerText;
             if (viejoTitulo && viejoTitulo !== 'Chat' && viejoTitulo !== 'Chat Grupal') {
                 db.ref("usuarios/" + viejoTitulo).off();
@@ -405,6 +425,7 @@
             
             const b = document.getElementById(`badge-${id}`);
             if(b) b.innerHTML = "";
+            scrollToBottom();
         }
 
         function escucharEscritura() {
@@ -526,6 +547,7 @@
                 i.value = ""; i.style.height = 'auto';
                 db.ref(`typing/${salaActual}/${usuarioActual}`).set(false);
                 cancelarRespuesta();
+                scrollToBottom();
             }
         }
 
