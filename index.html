@@ -112,7 +112,8 @@
         #scroll-down { position: fixed; bottom: 90px; right: 20px; background: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; z-index: 90; }
         .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        #header-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+        /* Cambiado a display: none para quitar el punto del encabezado */
+        #header-status-dot { display: none; }
     </style>
 </head>
 <body onclick="cerrarSelectores()">
@@ -284,7 +285,7 @@
         let mensajesSeleccionados = [];
         let mensajeParaResponder = null;
         let pressTimer;
-        let estaEscribiendoAlguien = false; // Variable de control
+        let estaEscribiendoAlguien = false; 
 
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
@@ -336,7 +337,8 @@
             const ultimaSala = localStorage.getItem('urrichat_last_room');
             const ultimoTitulo = localStorage.getItem('urrichat_last_title');
             document.getElementById('login').style.display = 'none';
-            document.getElementById('mi-perfil').innerText = "● " + user;
+            // Se quita el punto del nombre de perfil
+            document.getElementById('mi-perfil').innerText = user;
             escucharUsuarios();
             if (ultimaSala && ultimaSala !== "contacts") { abrirChat(ultimaSala, ultimoTitulo || "Chat"); }
             else { document.getElementById('contacts-container').style.display = 'flex'; document.getElementById('chat-container').style.display = 'none'; localStorage.setItem('urrichat_last_room', 'contacts'); }
@@ -369,7 +371,6 @@
             verificarMensajesNuevos('muro');
         }
 
-        // Mejora en la lógica de visibilidad exclusiva
         function actualizarHeaderStatus(isOnline) {
             const dot = document.getElementById('header-status-dot');
             const text = document.getElementById('header-status-text');
@@ -388,7 +389,6 @@
                 text.style.color = '#ff4444'; 
             }
 
-            // Si alguien está escribiendo, forzamos que el status se oculte
             if (estaEscribiendoAlguien) {
                 statusContainer.style.display = 'none';
                 subtitle.style.display = 'block';
@@ -428,14 +428,13 @@
             const viejoTitulo = document.getElementById('chat-title').innerText;
             if (viejoTitulo && viejoTitulo !== 'Chat' && viejoTitulo !== 'Chat Grupal') db.ref("usuarios/" + viejoTitulo).off();
             salaActual = id;
-            estaEscribiendoAlguien = false; // Reset al cambiar de chat
+            estaEscribiendoAlguien = false;
             cancelarSeleccion(); cancelarRespuesta();
             localStorage.setItem('urrichat_last_room', id); localStorage.setItem('urrichat_last_title', title);
             document.getElementById('contacts-container').style.display = 'none';
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = title;
             
-            // Limpiar estados previos antes de escuchar nuevos
             document.getElementById('chat-subtitle').style.display = 'none';
             document.getElementById('chat-header-status').style.display = 'none';
 
@@ -460,16 +459,12 @@
                     statusContainer.style.display = 'none';
                 } else {
                     subtitle.style.display = 'none';
-                    // Al dejar de escribir, mostramos el status de conexión (si no es el muro)
                     if (salaActual !== 'muro') {
                         statusContainer.style.display = 'flex';
                     }
                 }
             });
         }
-
-        // El resto de funciones (obtenerHtmlContenido, escucharMensajes, enviar, etc.) 
-        // se mantienen exactamente igual a tu código original...
         
         function obtenerHtmlContenido(d, esMio) {
             let replyHtml = d.reply ? `<div class="reply-box" style="border-left-color: ${esMio?'#fff':'#007bff'}"><small><strong>${d.reply.u}</strong></small><br><small>${d.reply.t || 'Archivo'}</small></div>` : "";
