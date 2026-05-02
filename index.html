@@ -287,7 +287,6 @@
         let pressTimer;
         let estaEscribiendoAlguien = false; 
 
-        // Diccionario para evitar duplicar escuchadores de badges
         let badgeListeners = {};
 
         if (window.visualViewport) {
@@ -342,7 +341,6 @@
             document.getElementById('login').style.display = 'none';
             document.getElementById('mi-perfil').innerText = user;
             
-            // Iniciamos la escucha de usuarios y badges globales
             escucharUsuarios();
             verificarMensajesNuevos('muro');
 
@@ -374,7 +372,6 @@
                                             <span class="online-dot ${isOnline ? 'dot-online' : 'dot-offline'}"></span>
                                           </div>`;
                         list.appendChild(card);
-                        // Escuchamos los mensajes nuevos para este usuario
                         verificarMensajesNuevos(salaID);
                         if (salaActual === salaID) actualizarHeaderStatus(isOnline);
                     }
@@ -382,35 +379,40 @@
             });
         }
 
+        // --- CORRECCIÓN ESPECÍFICA AQUÍ ---
         function verificarMensajesNuevos(id) {
-            // Si ya estamos escuchando este ID, no creamos otro listener
-            if (badgeListeners[id]) return;
+            // Si ya existe el listener, actualizamos el badge inmediatamente para el nuevo elemento del DOM
+            if (badgeListeners[id]) {
+                db.ref(id).once("value", (snap) => actualizarBadgeUI(id, snap));
+                return;
+            }
+            
             badgeListeners[id] = true;
-
             db.ref(id).on("value", (snap) => {
-                const b = document.getElementById(`badge-${id}`);
-                if (!b) return;
-
-                // Si es la sala abierta, marcamos como leídos y no mostramos badge
-                if(salaActual === id) {
-                    snap.forEach(m => { 
-                        if(m.val().u !== usuarioActual && m.val().r === false) {
-                            db.ref(`${id}/${m.key}/r`).set(true); 
-                        }
-                    });
-                    b.innerHTML = "";
-                    return;
-                }
-
-                // Contamos mensajes no leídos del otro usuario
-                let totalNoLeidos = 0;
-                snap.forEach(m => {
-                    const msg = m.val();
-                    if(msg.u !== usuarioActual && msg.r === false) { totalNoLeidos++; }
-                });
-                b.innerHTML = totalNoLeidos > 0 ? `<span class="unread-badge">${totalNoLeidos}</span>` : "";
+                actualizarBadgeUI(id, snap);
             });
         }
+
+        function actualizarBadgeUI(id, snap) {
+            const b = document.getElementById(`badge-${id}`);
+            if (!b) return;
+
+            // Si el chat está abierto, NO mostramos conteo (se marcan en escucharMensajes)
+            if(salaActual === id) {
+                b.innerHTML = "";
+                return;
+            }
+
+            let totalNoLeidos = 0;
+            snap.forEach(m => {
+                const msg = m.val();
+                // Solo contamos si el mensaje es del otro y no está leído
+                if(msg.u !== usuarioActual && msg.r === false) { totalNoLeidos++; }
+            });
+            
+            b.innerHTML = totalNoLeidos > 0 ? `<span class="unread-badge">${totalNoLeidos}</span>` : "";
+        }
+        // ----------------------------------
 
         function actualizarHeaderStatus(isOnline) {
             const dot = document.getElementById('header-status-dot');
@@ -470,7 +472,6 @@
             escucharMensajes(); 
             escucharEscritura();
             
-            // Al abrir el chat, limpiamos su badge inmediatamente
             const b = document.getElementById(`badge-${id}`); 
             if(b) b.innerHTML = "";
         }
