@@ -287,6 +287,9 @@
         let pressTimer;
         let estaEscribiendoAlguien = false; 
 
+        // Diccionario para evitar duplicar escuchadores de badges
+        let badgeListeners = {};
+
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 const containers = ['contacts-container', 'chat-container'];
@@ -337,11 +340,19 @@
             const ultimaSala = localStorage.getItem('urrichat_last_room');
             const ultimoTitulo = localStorage.getItem('urrichat_last_title');
             document.getElementById('login').style.display = 'none';
-            // Se quita el punto del nombre de perfil
             document.getElementById('mi-perfil').innerText = user;
+            
+            // Iniciamos la escucha de usuarios y badges globales
             escucharUsuarios();
-            if (ultimaSala && ultimaSala !== "contacts") { abrirChat(ultimaSala, ultimoTitulo || "Chat"); }
-            else { document.getElementById('contacts-container').style.display = 'flex'; document.getElementById('chat-container').style.display = 'none'; localStorage.setItem('urrichat_last_room', 'contacts'); }
+            verificarMensajesNuevos('muro');
+
+            if (ultimaSala && ultimaSala !== "contacts") { 
+                abrirChat(ultimaSala, ultimoTitulo || "Chat"); 
+            } else { 
+                document.getElementById('contacts-container').style.display = 'flex'; 
+                document.getElementById('chat-container').style.display = 'none'; 
+                localStorage.setItem('urrichat_last_room', 'contacts'); 
+            }
         }
 
         function escucharUsuarios() {
@@ -363,12 +374,42 @@
                                             <span class="online-dot ${isOnline ? 'dot-online' : 'dot-offline'}"></span>
                                           </div>`;
                         list.appendChild(card);
+                        // Escuchamos los mensajes nuevos para este usuario
                         verificarMensajesNuevos(salaID);
                         if (salaActual === salaID) actualizarHeaderStatus(isOnline);
                     }
                 });
             });
-            verificarMensajesNuevos('muro');
+        }
+
+        function verificarMensajesNuevos(id) {
+            // Si ya estamos escuchando este ID, no creamos otro listener
+            if (badgeListeners[id]) return;
+            badgeListeners[id] = true;
+
+            db.ref(id).on("value", (snap) => {
+                const b = document.getElementById(`badge-${id}`);
+                if (!b) return;
+
+                // Si es la sala abierta, marcamos como leídos y no mostramos badge
+                if(salaActual === id) {
+                    snap.forEach(m => { 
+                        if(m.val().u !== usuarioActual && m.val().r === false) {
+                            db.ref(`${id}/${m.key}/r`).set(true); 
+                        }
+                    });
+                    b.innerHTML = "";
+                    return;
+                }
+
+                // Contamos mensajes no leídos del otro usuario
+                let totalNoLeidos = 0;
+                snap.forEach(m => {
+                    const msg = m.val();
+                    if(msg.u !== usuarioActual && msg.r === false) { totalNoLeidos++; }
+                });
+                b.innerHTML = totalNoLeidos > 0 ? `<span class="unread-badge">${totalNoLeidos}</span>` : "";
+            });
         }
 
         function actualizarHeaderStatus(isOnline) {
@@ -398,24 +439,6 @@
             }
         }
 
-        function verificarMensajesNuevos(id) {
-            db.ref(id).on("value", (snap) => {
-                const b = document.getElementById(`badge-${id}`);
-                if (!b) return;
-                if(salaActual === id) {
-                    snap.forEach(m => { if(m.val().u !== usuarioActual && m.val().r === false) db.ref(`${id}/${m.key}/r`).set(true); });
-                    b.innerHTML = "";
-                    return;
-                }
-                let totalNoLeidos = 0;
-                snap.forEach(m => {
-                    const msg = m.val();
-                    if(msg.u !== usuarioActual && msg.r === false) { totalNoLeidos++; }
-                });
-                b.innerHTML = totalNoLeidos > 0 ? `<span class="unread-badge">${totalNoLeidos}</span>` : "";
-            });
-        }
-
         function monitorearEstadoChat(nombreUsuario) {
             const statusContainer = document.getElementById('chat-header-status');
             if (salaActual === 'muro') { statusContainer.style.display = 'none'; return; }
@@ -427,10 +450,15 @@
         function abrirChat(id, title) {
             const viejoTitulo = document.getElementById('chat-title').innerText;
             if (viejoTitulo && viejoTitulo !== 'Chat' && viejoTitulo !== 'Chat Grupal') db.ref("usuarios/" + viejoTitulo).off();
+            
             salaActual = id;
             estaEscribiendoAlguien = false;
-            cancelarSeleccion(); cancelarRespuesta();
-            localStorage.setItem('urrichat_last_room', id); localStorage.setItem('urrichat_last_title', title);
+            cancelarSeleccion(); 
+            cancelarRespuesta();
+            
+            localStorage.setItem('urrichat_last_room', id); 
+            localStorage.setItem('urrichat_last_title', title);
+            
             document.getElementById('contacts-container').style.display = 'none';
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = title;
@@ -441,7 +469,10 @@
             monitorearEstadoChat(title); 
             escucharMensajes(); 
             escucharEscritura();
-            const b = document.getElementById(`badge-${id}`); if(b) b.innerHTML = "";
+            
+            // Al abrir el chat, limpiamos su badge inmediatamente
+            const b = document.getElementById(`badge-${id}`); 
+            if(b) b.innerHTML = "";
         }
 
         function escucharEscritura() {
