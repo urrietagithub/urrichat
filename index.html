@@ -379,14 +379,14 @@
             });
         }
 
-        // --- CORRECCIÓN ESPECÍFICA AQUÍ ---
         function verificarMensajesNuevos(id) {
-            // Si ya existe el listener, actualizamos el badge inmediatamente para el nuevo elemento del DOM
+            // Si el listener ya existe, solo refrescamos la UI inmediatamente para el nuevo elemento del DOM
             if (badgeListeners[id]) {
                 db.ref(id).once("value", (snap) => actualizarBadgeUI(id, snap));
                 return;
             }
             
+            // Creamos un listener persistente real-time
             badgeListeners[id] = true;
             db.ref(id).on("value", (snap) => {
                 actualizarBadgeUI(id, snap);
@@ -397,7 +397,7 @@
             const b = document.getElementById(`badge-${id}`);
             if (!b) return;
 
-            // Si el chat está abierto, NO mostramos conteo (se marcan en escucharMensajes)
+            // Si el chat está abierto, el conteo es cero (ya se marcan en escucharMensajes)
             if(salaActual === id) {
                 b.innerHTML = "";
                 return;
@@ -406,13 +406,11 @@
             let totalNoLeidos = 0;
             snap.forEach(m => {
                 const msg = m.val();
-                // Solo contamos si el mensaje es del otro y no está leído
                 if(msg.u !== usuarioActual && msg.r === false) { totalNoLeidos++; }
             });
             
             b.innerHTML = totalNoLeidos > 0 ? `<span class="unread-badge">${totalNoLeidos}</span>` : "";
         }
-        // ----------------------------------
 
         function actualizarHeaderStatus(isOnline) {
             const dot = document.getElementById('header-status-dot');
@@ -663,10 +661,22 @@
         function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 100) ? 'flex' : 'none'; }
 
         function volverAContactos() { 
-            if(salaActual) { db.ref(`typing/${salaActual}/${usuarioActual}`).set(false); db.ref(`typing/${salaActual}`).off(); db.ref(salaActual).off(); }
-            salaActual = ""; estaEscribiendoAlguien = false;
+            if(salaActual) { 
+                db.ref(`typing/${salaActual}/${usuarioActual}`).set(false); 
+                db.ref(`typing/${salaActual}`).off(); 
+                db.ref(salaActual).off(); 
+            }
+            const salaIDFinal = salaActual;
+            salaActual = ""; 
+            estaEscribiendoAlguien = false;
             localStorage.setItem('urrichat_last_room', 'contacts');
-            document.getElementById('chat-container').style.display = 'none'; document.getElementById('contacts-container').style.display = 'flex'; 
+            document.getElementById('chat-container').style.display = 'none'; 
+            document.getElementById('contacts-container').style.display = 'flex'; 
+
+            // Forzamos actualización de badges al volver para asegurar que todo esté al día
+            Object.keys(badgeListeners).forEach(id => {
+                db.ref(id).once("value", (snap) => actualizarBadgeUI(id, snap));
+            });
         }
 
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
