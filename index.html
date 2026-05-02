@@ -489,22 +489,37 @@
         }
 
         function escucharMensajes() {
-            const box = document.getElementById("messages"); box.innerHTML = ""; 
-            db.ref(salaActual).off();
+            const box = document.getElementById("messages"); 
+            box.innerHTML = ""; 
+            db.ref(salaActual).off(); // Limpia escuchas previas para no saturar
+
+            // Child_added dispara para cada mensaje existente y para CADA UNO nuevo al instante
             db.ref(salaActual).limitToLast(50).on("child_added", (child) => {
-                const d = child.val(); const key = child.key; const esMio = d.u === usuarioActual;
+                const d = child.val(); 
+                const key = child.key; 
+                const esMio = d.u === usuarioActual;
+
+                // Marcar como leído si es del otro
                 if(!esMio && d.r === false) db.ref(`${salaActual}/${key}/r`).set(true);
+
                 const msgDiv = document.createElement("div");
-                msgDiv.id = `cont-${key}`; msgDiv.className = `msg-container ${esMio?'me':'other'}`;
+                msgDiv.id = `cont-${key}`; 
+                msgDiv.className = `msg-container ${esMio?'me':'other'}`;
                 msgDiv.onclick = () => manejarClickMensaje(key);
                 msgDiv.onmousedown = (e) => startPress(e, key);
                 msgDiv.ontouchstart = (e) => startPress(e, key);
+                msgDiv.onmouseup = clearPress;
+                msgDiv.ontouchend = clearPress;
+
                 msgDiv.innerHTML = `<div class="msg ${esMio?'me':'other'}" ondblclick="reaccionar(event,'${key}')">
                                         <div class="msg-body">${obtenerHtmlContenido(d, esMio)}</div>
                                         <div class="status-info">${d.h} ${esMio?(d.r?'<i class="fas fa-check-double" style="color:#88ccff"></i>':'<i class="fas fa-check"></i>'):''}</div>
                                     </div>`;
-                box.appendChild(msgDiv); scrollToBottom();
+                box.appendChild(msgDiv); 
+                scrollToBottom();
             });
+
+            // Detectar cambios (como reacciones o el check de leído) al instante
             db.ref(salaActual).on("child_changed", (child) => {
                 const d = child.val(); const key = child.key; const container = document.getElementById(`cont-${key}`);
                 if(container) {
@@ -515,7 +530,12 @@
                     if(statusInfo && esMio) statusInfo.innerHTML = `${d.h} ${d.r?'<i class="fas fa-check-double" style="color:#88ccff"></i>':'<i class="fas fa-check"></i>'}`;
                 }
             });
-            db.ref(salaActual).on("child_removed", (child) => { const el = document.getElementById(`cont-${child.key}`); if(el) el.remove(); });
+
+            // Borrado instantáneo
+            db.ref(salaActual).on("child_removed", (child) => { 
+                const el = document.getElementById(`cont-${child.key}`); 
+                if(el) el.remove(); 
+            });
         }
 
         function startPress(e, key) { pressTimer = setTimeout(() => activarSeleccion(key), 600); }
