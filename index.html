@@ -380,24 +380,23 @@
         }
 
         function verificarMensajesNuevos(id) {
-            // Si el listener ya existe, solo refrescamos la UI inmediatamente para el nuevo elemento del DOM
-            if (badgeListeners[id]) {
+            // Activar listener persistente si no existe
+            if (!badgeListeners[id]) {
+                badgeListeners[id] = true;
+                db.ref(id).on("value", (snap) => {
+                    actualizarBadgeUI(id, snap);
+                });
+            } else {
+                // Si ya existe, forzar actualización visual inmediata
                 db.ref(id).once("value", (snap) => actualizarBadgeUI(id, snap));
-                return;
             }
-            
-            // Creamos un listener persistente real-time
-            badgeListeners[id] = true;
-            db.ref(id).on("value", (snap) => {
-                actualizarBadgeUI(id, snap);
-            });
         }
 
         function actualizarBadgeUI(id, snap) {
             const b = document.getElementById(`badge-${id}`);
             if (!b) return;
 
-            // Si el chat está abierto, el conteo es cero (ya se marcan en escucharMensajes)
+            // Si el chat está abierto, no mostramos badge
             if(salaActual === id) {
                 b.innerHTML = "";
                 return;
@@ -406,7 +405,10 @@
             let totalNoLeidos = 0;
             snap.forEach(m => {
                 const msg = m.val();
-                if(msg.u !== usuarioActual && msg.r === false) { totalNoLeidos++; }
+                // Si el mensaje no es mío y está como no leído (r: false)
+                if(msg.u !== usuarioActual && msg.r === false) { 
+                    totalNoLeidos++; 
+                }
             });
             
             b.innerHTML = totalNoLeidos > 0 ? `<span class="unread-badge">${totalNoLeidos}</span>` : "";
@@ -470,6 +472,7 @@
             escucharMensajes(); 
             escucharEscritura();
             
+            // Limpiar badge localmente al entrar
             const b = document.getElementById(`badge-${id}`); 
             if(b) b.innerHTML = "";
         }
@@ -519,7 +522,9 @@
             db.ref(salaActual).off();
             db.ref(salaActual).limitToLast(50).on("child_added", (child) => {
                 const d = child.val(); const key = child.key; const esMio = d.u === usuarioActual;
+                // Al recibir mensaje en chat abierto, lo marcamos como leído
                 if(!esMio && d.r === false) db.ref(`${salaActual}/${key}/r`).set(true);
+                
                 const msgDiv = document.createElement("div");
                 msgDiv.id = `cont-${key}`; msgDiv.className = `msg-container ${esMio?'me':'other'}`;
                 msgDiv.onclick = () => manejarClickMensaje(key);
@@ -665,15 +670,17 @@
                 db.ref(`typing/${salaActual}/${usuarioActual}`).set(false); 
                 db.ref(`typing/${salaActual}`).off(); 
                 db.ref(salaActual).off(); 
+                
+                // Antes de salir, forzamos una lectura rápida para que el badge se limpie si corresponde
+                verificarMensajesNuevos(salaActual);
             }
-            const salaIDFinal = salaActual;
             salaActual = ""; 
             estaEscribiendoAlguien = false;
             localStorage.setItem('urrichat_last_room', 'contacts');
             document.getElementById('chat-container').style.display = 'none'; 
             document.getElementById('contacts-container').style.display = 'flex'; 
 
-            // Forzamos actualización de badges al volver para asegurar que todo esté al día
+            // Actualizamos visualmente todos los badges al volver
             Object.keys(badgeListeners).forEach(id => {
                 db.ref(id).once("value", (snap) => actualizarBadgeUI(id, snap));
             });
