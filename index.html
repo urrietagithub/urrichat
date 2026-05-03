@@ -89,6 +89,24 @@
 
         .input-area { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); background: #1a1a20; display: flex; gap: 10px; align-items: center; border-top: 1px solid #333; }
         textarea#msg-input { flex: 1; padding: 10px 15px; border-radius: 22px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-size: 16px; max-height: 120px; }
+        
+        /* --- ESTILO DE BOTONES UNIFICADO (BORDES SUAVES) --- */
+        .btn-header, .btn-icon { 
+            background: rgba(255, 255, 255, 0.03); 
+            color: #007bff; 
+            border: 1px solid rgba(0, 123, 255, 0.4); 
+            width: 38px;
+            height: 38px;
+            border-radius: 12px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .btn-icon:active { background: rgba(0, 123, 255, 0.1); transform: scale(0.9); }
+
         .footer-btn { background: transparent; border: none; color: #007bff; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 35px; }
         button#main-btn { width: 45px; height: 45px; background: #007bff; color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
@@ -106,7 +124,6 @@
         .emoji-picker { display: none; position: absolute; bottom: 80px; left: 10px; background: #1a1a20; border: 1px solid #333; padding: 12px; border-radius: 20px; grid-template-columns: repeat(5, 1fr); gap: 10px; z-index: 100; max-height: 250px; overflow-y: auto; }
         
         .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 2px; font-size: 10px; opacity: 0.7; }
-        .btn-header { background: transparent; color: #007bff; border: 1px solid #007bff; padding: 6px 12px; border-radius: 10px; font-size: 14px; cursor: pointer; }
         
         #scroll-down { position: fixed; bottom: 90px; right: 20px; background: #007bff; color: white; width: 40px; height: 40px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 90; }
         
@@ -132,7 +149,7 @@
             <span id="mi-perfil" style="font-weight: bold; color: #2ecc71;"></span>
             <div style="display: flex; gap: 8px;">
                 <button class="btn-header" onclick="editarNombre()"><i class="fas fa-user-edit"></i></button>
-                <button class="btn-header" style="color:#ff4444; border-color:#ff4444" onclick="confirmarSalida()"><i class="fas fa-sign-out-alt"></i></button>
+                <button class="btn-header" style="color:#ff4444; border-color:rgba(255, 68, 68, 0.4)" onclick="confirmarSalida()"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
         <div id="lista-usuarios">
@@ -150,7 +167,8 @@
 
     <div id="chat-container">
         <div class="header" id="chat-header-normal">
-            <button class="footer-btn" onclick="volverAContactos()"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn-icon" onclick="volverAContactos()"><i class="fas fa-chevron-left"></i></button>
+            
             <div style="text-align: center; flex: 1;">
                 <span id="chat-title" style="font-weight: bold; display: block;">Chat</span>
                 <div id="chat-header-status" style="font-size: 10px; display: flex; align-items: center; justify-content: center; gap: 4px;">
@@ -158,17 +176,18 @@
                 </div>
                 <span id="chat-subtitle" style="font-size: 10px; color: #2ecc71; display: none;">Escribiendo...</span>
             </div>
-            <button class="footer-btn" style="color:#ff4444;" onclick="vaciarChat()"><i class="fas fa-trash-alt"></i></button>
+            
+            <button class="btn-icon" style="color:#ff4444; border-color:rgba(255, 68, 68, 0.4);" onclick="vaciarChat()"><i class="fas fa-trash-alt"></i></button>
         </div>
 
         <div class="header" id="chat-header-selection" style="display: none;">
             <div style="display: flex; align-items: center; gap: 15px;">
-                <button class="footer-btn" onclick="cancelarSeleccion()"><i class="fas fa-times"></i></button>
+                <button class="btn-icon" onclick="cancelarSeleccion()"><i class="fas fa-times"></i></button>
                 <span id="selection-count" style="font-weight: bold; color: #007bff; font-size: 1.2rem;">1</span>
             </div>
-            <div style="display: flex; gap: 15px;">
-                <button id="reply-btn-header" class="footer-btn" onclick="prepararRespuesta()"><i class="fas fa-reply"></i></button>
-                <button class="footer-btn" style="color: #ff4444;" onclick="borrarMensajesSeleccionados()"><i class="fas fa-trash-alt"></i></button>
+            <div style="display: flex; gap: 8px;">
+                <button id="reply-btn-header" class="btn-icon" onclick="prepararRespuesta()"><i class="fas fa-reply"></i></button>
+                <button class="btn-icon" style="color: #ff4444; border-color:rgba(255, 68, 68, 0.4);" onclick="borrarMensajesSeleccionados()"><i class="fas fa-trash-alt"></i></button>
             </div>
         </div>
 
@@ -231,6 +250,7 @@
     </div>
 
     <script>
+        // Mantenemos toda tu lógica de Firebase y funciones intacta
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -465,7 +485,7 @@
             document.getElementById('chat-header-normal').style.display = count > 0 ? 'none' : 'flex';
             document.getElementById('chat-header-selection').style.display = count > 0 ? 'flex' : 'none';
             document.getElementById('selection-count').innerText = count;
-            document.getElementById('reply-btn-header').style.display = count === 1 ? 'block' : 'none';
+            document.getElementById('reply-btn-header').style.display = count === 1 ? 'flex' : 'none';
             document.querySelectorAll('.msg-container').forEach(el => {
                 const id = el.id.replace('cont-', '');
                 el.classList.toggle('selected', mensajesSeleccionados.includes(id));
