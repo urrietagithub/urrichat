@@ -90,7 +90,6 @@
         .input-area { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); background: #1a1a20; display: flex; gap: 10px; align-items: center; border-top: 1px solid #333; }
         textarea#msg-input { flex: 1; padding: 10px 15px; border-radius: 22px; border: none; background: #2c2c34; color: white; outline: none; resize: none; font-size: 16px; max-height: 120px; }
         
-        /* --- ESTILO DE BOTONES UNIFICADO (BORDES SUAVES) --- */
         .btn-header, .btn-icon { 
             background: rgba(255, 255, 255, 0.03); 
             color: #007bff; 
@@ -117,16 +116,34 @@
         .dot-online { background-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
         .dot-offline { background-color: #ff4444; }
 
-        #reaction-selector { display: none; position: fixed; background: #1a1a20; border: 1px solid #333; padding: 10px; border-radius: 20px; z-index: 2000; grid-template-columns: repeat(5, 1fr); gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .emoji-item { cursor: pointer; font-size: 1.4rem; transition: transform 0.1s; }
+        /* PANELES UNIFICADOS: REACCIONES Y EMOJIS */
+        #reaction-selector, .emoji-picker { 
+            display: none; 
+            position: fixed; 
+            background: #1a1a20; 
+            border: 1px solid #333; 
+            padding: 15px; 
+            border-radius: 20px; 
+            z-index: 2000; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 15px; 
+            width: 90%;
+            max-width: 400px;
+            max-height: 250px; 
+            overflow-y: auto; 
+        }
+        
+        /* Ajustes específicos de posición */
+        .emoji-picker { bottom: 80px; left: 5%; right: 5%; }
+        #reaction-selector { left: 50%; transform: translateX(-50%); }
+
+        .emoji-item { cursor: pointer; font-size: 1.6rem; transition: transform 0.1s; display: inline-block; }
         .emoji-item:active { transform: scale(1.3); }
         
-        .emoji-picker { display: none; position: absolute; bottom: 80px; left: 10px; background: #1a1a20; border: 1px solid #333; padding: 12px; border-radius: 20px; grid-template-columns: repeat(5, 1fr); gap: 10px; z-index: 100; max-height: 250px; overflow-y: auto; }
-        
         .status-info { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 2px; font-size: 10px; opacity: 0.7; }
-        
         #scroll-down { position: fixed; bottom: 90px; right: 20px; background: #007bff; color: white; width: 40px; height: 40px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 90; }
-        
         .recording { color: #ff4444 !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     </style>
@@ -235,7 +252,7 @@
         <span class="emoji-item" onclick="aplicarReaccion('😘')">😘</span><span class="emoji-item" onclick="aplicarReaccion('😍')">😍</span>
         <span class="emoji-item" onclick="aplicarReaccion('🥰')">🥰</span><span class="emoji-item" onclick="aplicarReaccion('😃')">😃</span>
         <span class="emoji-item" onclick="aplicarReaccion('😂')">😂</span><span class="emoji-item" onclick="aplicarReaccion('😉')">😉</span>
-        <span class="emoji-item" onclick="aplicarReaccion('😮')">😮</span><span class="emoji-item" onclick="aplicarReaccion('😢')">😢</span>
+        <span class="emoji-item" onclick="aplicarReaccion('😮')">😮</span><span class="emoji-item" onclick="aplicarReaccion('🥲')">🥲</span>
         <span class="emoji-item" onclick="aplicarReaccion('😬')">😬</span><span class="emoji-item" onclick="aplicarReaccion('🥹')">🥹</span>
         <span class="emoji-item" onclick="aplicarReaccion('🤔')">🤔</span><span class="emoji-item" onclick="aplicarReaccion('😊')">😊</span>
         <span class="emoji-item" onclick="aplicarReaccion('🥺')">🥺</span><span class="emoji-item" onclick="aplicarReaccion('😎')">😎</span>
@@ -250,7 +267,6 @@
     </div>
 
     <script>
-        // Mantenemos toda tu lógica de Firebase y funciones intacta
         const firebaseConfig = {
             apiKey: "AIzaSyA7XKmn8f1w6hAVUZaS8Eui7FAnZRy0Myg",
             authDomain: "urrichatapp.firebaseapp.com",
@@ -275,7 +291,6 @@
         let estaEscribiendoAlguien = false; 
         let badgeListeners = {};
 
-        // Fix para teclado en Android
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
                 const chat = document.getElementById('chat-container');
@@ -375,18 +390,14 @@
 
         function abrirChat(id, title) {
             if(salaActual) { db.ref(salaActual).off(); db.ref(`typing/${salaActual}`).off(); }
-            
             salaActual = id;
             cancelarSeleccion(); 
             cancelarRespuesta();
-            
             localStorage.setItem('urrichat_last_room', id); 
             localStorage.setItem('urrichat_last_title', title);
-            
             document.getElementById('contacts-container').style.display = 'none';
             document.getElementById('chat-container').style.display = 'flex';
             document.getElementById('chat-title').innerText = title;
-            
             if(title !== 'Chat Grupal') {
                 db.ref("usuarios/" + title).on("value", (snap) => {
                     const statusText = document.getElementById('header-status-text');
@@ -396,10 +407,8 @@
             } else {
                 document.getElementById('header-status-text').innerText = "";
             }
-
             escucharMensajes(); 
             escucharEscritura();
-            
             const b = document.getElementById(`badge-${id}`); 
             if(b) b.innerHTML = "";
         }
@@ -433,11 +442,9 @@
         function escucharMensajes() {
             const box = document.getElementById("messages"); 
             box.innerHTML = ""; 
-            
             db.ref(salaActual).limitToLast(50).on("child_added", (snap) => {
                 const d = snap.val(); const key = snap.key; const esMio = d.u === usuarioActual;
                 if(!esMio && d.r === false) db.ref(`${salaActual}/${key}/r`).set(true);
-
                 const div = document.createElement("div");
                 div.id = `cont-${key}`;
                 div.className = `msg-container ${esMio?'me':'other'}`;
@@ -446,7 +453,6 @@
                 div.onmouseup = () => clearTimeout(pressTimer);
                 div.ontouchstart = (e) => { pressTimer = setTimeout(() => activarSeleccion(key), 600); };
                 div.ontouchend = () => clearTimeout(pressTimer);
-
                 div.innerHTML = `<div class="msg ${esMio?'me':'other'}" ondblclick="reaccionar(event,'${key}')">
                                     <div class="msg-body">${renderContent(d, esMio)}</div>
                                     <div class="status-info">${d.h} ${esMio ? (d.r ? '<i class="fas fa-check-double" style="color:#88ccff"></i>' : '<i class="fas fa-check"></i>') : ''}</div>
@@ -559,15 +565,12 @@
         function reaccionar(e, id) {
             e.stopPropagation(); msgIdParaReaccionar = id;
             const s = document.getElementById('reaction-selector');
-            s.style.display = 'grid';
-            s.style.top = (e.clientY > window.innerHeight/2 ? e.clientY-120 : e.clientY+20) + 'px';
-            s.style.left = Math.max(10, Math.min(window.innerWidth-230, e.clientX-100)) + 'px';
+            s.style.display = 'flex';
+            s.style.top = (e.clientY > window.innerHeight/2 ? e.clientY-150 : e.clientY+20) + 'px';
         }
 
         function aplicarReaccion(emoji) { db.ref(`${salaActual}/${msgIdParaReaccionar}/reacciones/${emoji}`).transaction(v => (v || 0) + 1); cerrarSelectores(); }
-        
         function scrollToBottom() { const b = document.getElementById("messages"); b.scrollTo({ top: b.scrollHeight, behavior: 'smooth' }); }
-        
         function handleScroll(el) { document.getElementById('scroll-down').style.display = (el.scrollHeight - el.scrollTop > el.clientHeight + 150) ? 'flex' : 'none'; }
 
         function volverAContactos() { 
@@ -579,7 +582,7 @@
         }
 
         function cerrarSelectores() { document.getElementById('emoji-picker').style.display = 'none'; document.getElementById('reaction-selector').style.display = 'none'; }
-        function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='grid'?'none':'grid'; }
+        function toggleEmojiPicker(e) { e.stopPropagation(); const p = document.getElementById('emoji-picker'); p.style.display = p.style.display==='flex'?'none':'flex'; }
         function addEmoji(e) { document.getElementById('msg-input').value += e; }
         function vaciarChat() { if(confirm("¿Vaciar chat?")) db.ref(salaActual).remove(); }
         function borrarMensajesSeleccionados() { if (confirm("¿Borrar seleccionados?")) { mensajesSeleccionados.forEach(k => db.ref(`${salaActual}/${k}`).remove()); cancelarSeleccion(); } }
